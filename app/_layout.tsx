@@ -16,7 +16,7 @@ export default function RootLayout() {
     <AuthProvider>
       <ThemeProvider>
         <AccountProvider>
-          <NavigationThemeProvider value={DefaultTheme}>
+          <NavigationThemeProvider theme={DefaultTheme}>
         <Stack>
           <Stack.Screen name="onboarding" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false }} />
