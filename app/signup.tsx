@@ -1,21 +1,7 @@
 import BackButton from '@/components/BackButton';
-import {
-    Background,
-    Border,
-    Error,
-    InputBackground,
-    PrimaryBrand,
-    PrimaryText,
-    SecondaryText,
-    Success,
-    WhiteBackground
-} from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
-// import { GoogleAuthService } from '@/services/GoogleAuthService'; // Temporarily disabled
-import { showErrorAlert, showSuccessAlert } from '@/utils/alertUtils';
 import { getCalmErrorMessage } from '@/utils/errorMessages';
-import { navigateToOnboarding } from '@/utils/navigation';
-import { Ionicons } from '@expo/vector-icons';
+import { showErrorAlert, showSuccessAlert } from '@/utils/alertUtils';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -23,7 +9,6 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
@@ -73,25 +58,6 @@ const SignupScreen = () => {
     setPasswordStrength(checkPasswordStrength(text));
   };
 
-  // Google Sign-In temporarily disabled for testing
-  // const handleGoogleSignUp = async () => {
-  //   try {
-  //     setIsLoading(true);
-  //     const result = await GoogleAuthService.signInWithGoogle();
-      
-  //     if (result.success) {
-  //       // User profile is automatically created by GoogleAuthService
-  //       router.replace('/(tabs)');
-  //     } else {
-  //       Alert.alert('Google Sign-Up Failed', result.error || 'An error occurred during Google sign-up');
-  //     }
-  //   } catch (error: any) {
-  //     Alert.alert('Google Sign-Up Error', error.message || 'An error occurred during Google sign-up');
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
   const handleSignup = async () => {
     // Trim whitespace and check for empty strings
     const trimmedFullName = fullName.trim();
@@ -104,7 +70,7 @@ const SignupScreen = () => {
       return;
     }
     if (password !== confirmPassword) {
-      showErrorAlert('Password Mismatch', 'Your passwords don\'t match. Please make sure they\'re the same.');
+      showErrorAlert('Password Mismatch', 'Your passwords don&apos;t match. Please make sure they&apos;re the same.');
       return;
     }
     if (!emailValid) {
@@ -147,137 +113,149 @@ const SignupScreen = () => {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      className="flex-1 bg-background"
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={[styles.scrollContainer, { paddingBottom: Math.max(insets.bottom, 10) }]}>
-        {/* Animated Back Button */}
-        <BackButton onPress={navigateToOnboarding} />
+      <ScrollView 
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Back Button */}
+        <BackButton onPress={() => router.push('/onboarding')} />
 
-        <View style={styles.header}>
-          {/* Brand logo */}
+        {/* Header */}
+        <View className="items-center px-6 py-8">
           <Image 
             source={require('../assets/images/default-monochrome-black.png')}
-            style={styles.logoImage}
+            className="w-20 h-20 mb-6"
             resizeMode="contain"
           />
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join Leli Rentals today!</Text>
+          <Text className="text-3xl font-bold text-text-primary text-center mb-2">Create Account</Text>
+          <Text className="text-base text-text-secondary text-center">Join Leli Rentals today!</Text>
         </View>
 
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <Ionicons name="person-outline" size={20} color={SecondaryText} style={styles.inputIcon} />
+        {/* Form */}
+        <View className="px-6 pb-8">
+          {/* Full Name Input */}
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-text-primary mb-2">Full Name</Text>
             <TextInput
-              style={styles.input}
-              placeholder="Full Name"
-              placeholderTextColor={SecondaryText}
+              className="bg-muted-background border border-border rounded-xl px-4 py-4 text-base text-text-primary"
+              placeholder="Enter your full name"
               value={fullName}
               onChangeText={setFullName}
               autoCapitalize="words"
             />
           </View>
 
-          <View style={styles.inputContainer}>
-            <Ionicons name="mail-outline" size={20} color={SecondaryText} style={styles.inputIcon} />
+          {/* Email Input */}
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-text-primary mb-2">Email</Text>
             <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor={SecondaryText}
+              className={`bg-muted-background border rounded-xl px-4 py-4 text-base ${
+                emailValid === false ? 'border-error' : emailValid === true ? 'border-success' : 'border-border'
+              }`}
+              placeholder="Enter your email"
               value={email}
               onChangeText={handleEmailChange}
               keyboardType="email-address"
               autoCapitalize="none"
             />
-            {emailValid !== null && (
-              <Ionicons 
-                name={emailValid ? "checkmark-circle" : "close-circle"} 
-                size={20} 
-                color={emailValid ? Success : Error} 
-              />
+            {emailValid === false && (
+              <Text className="text-error text-sm mt-1">Please enter a valid email address</Text>
             )}
           </View>
 
-          <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color={SecondaryText} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor={SecondaryText}
-              value={password}
-              onChangeText={handlePasswordChange}
-              secureTextEntry={!showPassword}
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.passwordToggle}>
-              <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={SecondaryText} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Password Strength Indicator */}
-          {password.length > 0 && (
-            <View style={styles.passwordStrength}>
-              <Text style={styles.strengthLabel}>Password Strength:</Text>
-              <View style={styles.strengthBars}>
-                {[1, 2, 3, 4, 5].map((level) => (
-                  <View
-                    key={level}
-                    style={[
-                      styles.strengthBar,
-                      { backgroundColor: level <= passwordStrength ? Success : Border }
-                    ]}
-                  />
-                ))}
-              </View>
+          {/* Password Input */}
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-text-primary mb-2">Password</Text>
+            <View className="flex-row items-center bg-muted-background border border-border rounded-xl px-4">
+              <TextInput
+                className="flex-1 py-4 text-base text-text-primary"
+                placeholder="Create a password"
+                value={password}
+                onChangeText={handlePasswordChange}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} className="p-2">
+                <Text className="text-primary-brand font-medium">
+                  {showPassword ? 'Hide' : 'Show'}
+                </Text>
+              </TouchableOpacity>
             </View>
-          )}
-
-          <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color={SecondaryText} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Confirm Password"
-              placeholderTextColor={SecondaryText}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry={!showConfirmPassword}
-            />
-            <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.passwordToggle}>
-              <Ionicons name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={SecondaryText} />
-            </TouchableOpacity>
+            
+            {/* Password Strength Indicator */}
+            {password.length > 0 && (
+              <View className="mt-2">
+                <View className="flex-row space-x-1">
+                  {[1, 2, 3, 4, 5].map((level) => (
+                    <View
+                      key={level}
+                      className={`h-1 flex-1 rounded ${
+                        level <= passwordStrength
+                          ? passwordStrength <= 2
+                            ? 'bg-error'
+                            : passwordStrength <= 3
+                            ? 'bg-warning'
+                            : 'bg-success'
+                          : 'bg-border'
+                      }`}
+                    />
+                  ))}
+                </View>
+                <Text className="text-xs text-text-secondary mt-1">
+                  {passwordStrength <= 2 ? 'Weak' : passwordStrength <= 3 ? 'Medium' : 'Strong'} password
+                </Text>
+              </View>
+            )}
           </View>
 
-          <TouchableOpacity 
-            style={[styles.signupButton, isLoading && styles.signupButtonDisabled]} 
+          {/* Confirm Password Input */}
+          <View className="mb-6">
+            <Text className="text-sm font-medium text-text-primary mb-2">Confirm Password</Text>
+            <View className="flex-row items-center bg-muted-background border border-border rounded-xl px-4">
+              <TextInput
+                className="flex-1 py-4 text-base text-text-primary"
+                placeholder="Confirm your password"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!showConfirmPassword}
+              />
+              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} className="p-2">
+                <Text className="text-primary-brand font-medium">
+                  {showConfirmPassword ? 'Hide' : 'Show'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            {password !== confirmPassword && confirmPassword.length > 0 && (
+              <Text className="text-error text-sm mt-1">Passwords don't match</Text>
+            )}
+          </View>
+
+          {/* Sign Up Button */}
+          <TouchableOpacity
+            className={`py-4 px-6 rounded-xl ${
+              isLoading ? 'bg-muted-background' : 'bg-primary-brand'
+            }`}
             onPress={handleSignup}
             disabled={isLoading}
           >
-            <Text style={styles.signupButtonText}>
-              {isLoading ? 'Creating Account...' : 'Sign Up'}
+            <Text className={`text-center font-semibold text-base ${
+              isLoading ? 'text-text-secondary' : 'text-white'
+            }`}>
+              {isLoading ? 'Creating Account...' : 'Create Account'}
             </Text>
           </TouchableOpacity>
 
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          {/* Google Sign-In temporarily disabled for testing */}
-          {/* <TouchableOpacity 
-            style={[styles.googleButton, isLoading && styles.googleButtonDisabled]} 
-            onPress={handleGoogleSignUp}
-            disabled={isLoading}
-          >
-            <Ionicons name="logo-google" size={20} color={PrimaryBrand} />
-            <Text style={styles.googleButtonText}>
-              {isLoading ? 'Signing Up...' : 'Continue with Google'}
-            </Text>
-          </TouchableOpacity> */}
-
-          <View style={styles.footerTextContainer}>
-            <Text style={styles.footerText}>Already have an account? </Text>
-            <TouchableOpacity onPress={() => router.replace('/login')}>
-              <Text style={styles.loginLink}>Log In</Text>
+          {/* Sign In Link */}
+          <View className="mt-6">
+            <TouchableOpacity 
+              className="flex-row justify-center items-center py-4"
+              onPress={() => router.push('/login')}
+            >
+              <Text className="text-text-secondary">Already have an account? </Text>
+              <Text className="text-primary-brand font-semibold">Sign In</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -285,166 +263,5 @@ const SignupScreen = () => {
     </KeyboardAvoidingView>
   );
 };
-
-const styles = StyleSheet.create({
-  logoImage: {
-    width: 180,
-    height: 180,
-    marginBottom: 12,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: Background,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'flex-start',
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 10,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 20,
-    marginTop: 40,
-  },
-  logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: PrimaryBrand,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-    shadowColor: PrimaryBrand,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  logoText: {
-    fontSize: 32,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: PrimaryText,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: SecondaryText,
-  },
-  form: {
-    width: '100%',
-    maxWidth: 400,
-    alignSelf: 'center',
-    marginTop: 4,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: InputBackground,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: Border,
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    height: 50,
-    color: PrimaryText,
-    fontSize: 16,
-  },
-  passwordToggle: {
-    padding: 5,
-  },
-  passwordStrength: {
-    marginBottom: 15,
-  },
-  strengthLabel: {
-    fontSize: 12,
-    color: SecondaryText,
-    marginBottom: 5,
-  },
-  strengthBars: {
-    flexDirection: 'row',
-    gap: 4,
-  },
-  strengthBar: {
-    height: 4,
-    flex: 1,
-    borderRadius: 2,
-  },
-  signupButton: {
-    backgroundColor: PrimaryBrand,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 14,
-  },
-  signupButtonDisabled: {
-    backgroundColor: SecondaryText,
-    shadowOpacity: 0.1,
-  },
-  signupButtonText: {
-    color: WhiteBackground,
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 14,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Border,
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    color: SecondaryText,
-    fontSize: 14,
-  },
-  googleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: WhiteBackground,
-    borderRadius: 12,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: Border,
-    marginBottom: 14,
-  },
-  googleButtonText: {
-    color: PrimaryBrand,
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 10,
-  },
-  googleButtonDisabled: {
-    opacity: 0.6,
-  },
-  footerTextContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 20,
-  },
-  footerText: {
-    color: SecondaryText,
-    fontSize: 14,
-  },
-  loginLink: {
-    color: PrimaryBrand,
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-});
 
 export default SignupScreen;
