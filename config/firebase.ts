@@ -1,8 +1,9 @@
 import Constants from 'expo-constants';
 import { getApp, getApps, initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Firebase configuration using environment variables
 // Priority: 1. Environment variables (NEXT_PUBLIC_*), 2. Expo constants, 3. Development fallbacks
@@ -42,11 +43,18 @@ if (missingConfig.length > 0) {
 // Initialize Firebase (guard against HMR / multiple inits)
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-// Initialize Firebase Authentication with simplified persistence
+// Initialize Firebase Authentication with AsyncStorage persistence
 let auth: any = (globalThis as any).__LELI_AUTH__;
 if (!auth) {
-  // Use default auth for all platforms to prevent timeout issues
-  auth = getAuth(app);
+  try {
+    // Initialize auth with AsyncStorage persistence for React Native
+    auth = initializeAuth(app, {
+      persistence: getReactNativePersistence(AsyncStorage)
+    });
+  } catch (error) {
+    // If auth is already initialized, get the existing instance
+    auth = getAuth(app);
+  }
   (globalThis as any).__LELI_AUTH__ = auth;
 }
 

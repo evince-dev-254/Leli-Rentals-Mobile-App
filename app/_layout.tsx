@@ -1,7 +1,7 @@
-import { DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
+import '../global.css';
 
 import { AccountProvider } from '@/contexts/AccountContext';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -16,7 +16,6 @@ export default function RootLayout() {
     <AuthProvider>
       <ThemeProvider>
         <AccountProvider>
-          <NavigationThemeProvider theme={DefaultTheme}>
         <Stack>
           <Stack.Screen name="onboarding" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false }} />
@@ -29,7 +28,6 @@ export default function RootLayout() {
           <Stack.Screen name="categories" options={{ headerShown: false }} />
           <Stack.Screen name="about" options={{ headerShown: false }} />
           <Stack.Screen name="contact" options={{ headerShown: false }} />
-          <Stack.Screen name="profile" options={{ headerShown: false, title: 'Profile' }} />
           <Stack.Screen name="help" options={{ headerShown: false }} />
           <Stack.Screen name="terms" options={{ headerShown: false }} />
           <Stack.Screen name="privacy" options={{ headerShown: false }} />
@@ -54,7 +52,6 @@ export default function RootLayout() {
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         </Stack>
         <StatusBar style="auto" />
-        </NavigationThemeProvider>
         </AccountProvider>
       </ThemeProvider>
     </AuthProvider>
