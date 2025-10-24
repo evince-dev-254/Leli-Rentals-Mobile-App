@@ -93,7 +93,13 @@ const SignupScreen = () => {
   // };
 
   const handleSignup = async () => {
-    if (!fullName || !email || !password || !confirmPassword) {
+    // Trim whitespace and check for empty strings
+    const trimmedFullName = fullName.trim();
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+    const trimmedConfirmPassword = confirmPassword.trim();
+    
+    if (!trimmedFullName || !trimmedEmail || !trimmedPassword || !trimmedConfirmPassword) {
       showErrorAlert('Almost there!', 'Please fill in all fields to create your account.');
       return;
     }
@@ -114,13 +120,13 @@ const SignupScreen = () => {
       setIsLoading(true);
       
       // Create Firebase user account
-      await signUp(email, password, fullName);
+      await signUp(trimmedEmail, trimmedPassword, trimmedFullName);
       
       // Save user data to AsyncStorage (in a real app, this would be sent to a server)
       const userData = {
-        fullName,
-        email,
-        password, // In real app, this would be hashed
+        fullName: trimmedFullName,
+        email: trimmedEmail,
+        password: trimmedPassword, // In real app, this would be hashed
         createdAt: new Date().toISOString(),
         isVerified: false
       };

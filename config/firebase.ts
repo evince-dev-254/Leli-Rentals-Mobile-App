@@ -5,26 +5,20 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 // Firebase configuration using environment variables
-// Priority: 1. Environment variables (NEXT_PUBLIC_*), 2. Expo constants, 3. Fallback values
+// Priority: 1. Environment variables (NEXT_PUBLIC_*), 2. Expo constants
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 
-          Constants.expoConfig?.extra?.firebaseApiKey || 
-          "AIzaSyDzv5FX8AECAsA0a2--XpMD8GK5NOP1Rhg",
+          Constants.expoConfig?.extra?.firebaseApiKey,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 
-              Constants.expoConfig?.extra?.firebaseAuthDomain || 
-              "leli-rentals-52a08.firebaseapp.com",
+              Constants.expoConfig?.extra?.firebaseAuthDomain,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 
-             Constants.expoConfig?.extra?.firebaseProjectId || 
-             "leli-rentals-52a08",
+             Constants.expoConfig?.extra?.firebaseProjectId,
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 
-                 Constants.expoConfig?.extra?.firebaseStorageBucket || 
-                 "leli-rentals-52a08.firebasestorage.app",
+                 Constants.expoConfig?.extra?.firebaseStorageBucket,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || 
-                     Constants.expoConfig?.extra?.firebaseMessagingSenderId || 
-                     "220739389697",
+                     Constants.expoConfig?.extra?.firebaseMessagingSenderId,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || 
-         Constants.expoConfig?.extra?.firebaseAppId || 
-         "1:220739389697:web:701c8d4141b29d88a13300"
+         Constants.expoConfig?.extra?.firebaseAppId
 };
 
 // Initialize Firebase (guard against HMR / multiple inits)

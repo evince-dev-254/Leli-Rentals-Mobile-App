@@ -2,13 +2,13 @@
 // This file can be used to manage different environments (dev, staging, prod)
 
 export const ENV = {
-  // Firebase Configuration
-  FIREBASE_API_KEY: "AIzaSyDzv5FX8AECAsA0a2--XpMD8GK5NOP1Rhg",
-  FIREBASE_AUTH_DOMAIN: "leli-rentals-52a08.firebaseapp.com",
-  FIREBASE_PROJECT_ID: "leli-rentals-52a08",
-  FIREBASE_STORAGE_BUCKET: "leli-rentals-52a08.firebasestorage.app",
-  FIREBASE_MESSAGING_SENDER_ID: "220739389697",
-  FIREBASE_APP_ID: "1:220739389697:web:701c8d4141b29d88a13300",
+  // Firebase Configuration - using environment variables
+  FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  FIREBASE_STORAGE_BUCKET: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  FIREBASE_MESSAGING_SENDER_ID: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
   
   // App Configuration
   APP_NAME: "Leli Rentals",

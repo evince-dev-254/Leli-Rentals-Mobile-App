@@ -4,14 +4,17 @@ This project has been configured with Firebase Authentication using environment 
 
 ## Firebase Configuration
 
-The Firebase configuration has been set up in `config/firebase.ts` and `config/environment.ts` with the following credentials:
+The Firebase configuration has been set up in `config/firebase.ts` and `config/environment.ts` using environment variables for security.
 
-- **API Key**: AIzaSyDzv5FX8AECAsA0a2--XpMD8GK5NOP1Rhg
-- **Auth Domain**: leli-rentals-52a08.firebaseapp.com
-- **Project ID**: leli-rentals-52a08
-- **Storage Bucket**: leli-rentals-52a08.firebasestorage.app
-- **Messaging Sender ID**: 220739389697
-- **App ID**: 1:220739389697:web:701c8d4141b29d88a13300
+**⚠️ IMPORTANT**: Never commit Firebase credentials to the repository. Use environment variables instead.
+
+### Required Environment Variables:
+- **NEXT_PUBLIC_FIREBASE_API_KEY**: Your Firebase API Key
+- **NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN**: Your Firebase Auth Domain
+- **NEXT_PUBLIC_FIREBASE_PROJECT_ID**: Your Firebase Project ID
+- **NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET**: Your Firebase Storage Bucket
+- **NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID**: Your Firebase Messaging Sender ID
+- **NEXT_PUBLIC_FIREBASE_APP_ID**: Your Firebase App ID
 
 ## Features Implemented
 
@@ -41,8 +44,9 @@ The Firebase configuration is now properly managed through environment variables
 
 ### Configuration Files
 - `config/firebase.ts` - Firebase initialization with environment variable support
+- `config/environment.ts` - Environment configuration using process.env variables
+- `app.config.js` - Expo configuration that reads from environment variables
 - `env.local.template` - Template file showing the required environment variables
-- `app.json` - Expo configuration with Firebase credentials in `extra` section
 
 ### Environment Variable Priority
 1. **Environment Variables** (NEXT_PUBLIC_* from .env.local file) - Highest priority

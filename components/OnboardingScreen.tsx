@@ -1,3 +1,5 @@
+import { useAccount } from '@/contexts/AccountContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -79,25 +81,15 @@ const onboardingData = [
 const OnboardingScreen = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  const { accountType } = useAccount();
 
   const handleNext = async () => {
     if (currentIndex < onboardingData.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      // Mark onboarding as completed
-      if (Platform.OS === 'web') {
-        localStorage.setItem('hasSeenOnboarding', 'true');
-      } else {
-        // For mobile, use localStorage as fallback
-        try {
-          localStorage.setItem('hasSeenOnboarding', 'true');
-        } catch (error) {
-          // If localStorage is not available, just continue
-          console.log('localStorage not available, continuing...');
-        }
-      }
-      // Navigate to login page
-      router.replace('/login');
+      // Onboarding completed, navigate based on authentication status
+      await navigateAfterOnboarding();
     }
   };
 
@@ -108,7 +100,12 @@ const OnboardingScreen = () => {
   };
 
   const handleSkip = async () => {
-    // Mark onboarding as completed
+    // Onboarding skipped, navigate based on authentication status
+    await navigateAfterOnboarding();
+  };
+
+  const navigateAfterOnboarding = async () => {
+    // Mark onboarding as completed (for future reference)
     if (Platform.OS === 'web') {
       localStorage.setItem('hasSeenOnboarding', 'true');
     } else {
@@ -120,8 +117,21 @@ const OnboardingScreen = () => {
         console.log('localStorage not available, continuing...');
       }
     }
-    // Navigate to login page
-    router.replace('/login');
+
+    // Navigate based on authentication status
+    if (user) {
+      // User is authenticated, check if they have selected an account type
+      if (accountType) {
+        // User has selected account type, go to main app
+        router.replace('/(tabs)');
+      } else {
+        // User needs to select account type
+        router.replace('/account-type');
+      }
+    } else {
+      // User is not authenticated, show login
+      router.replace('/login');
+    }
   };
 
   const currentSlide = onboardingData[currentIndex];

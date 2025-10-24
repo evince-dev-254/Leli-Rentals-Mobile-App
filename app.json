@@ -9,19 +9,21 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.evincek254.rentals",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
-      "package": "com.Leli.Rentals",
+      "package": "com.evincek254.rentals",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/splash-icon.png",
         "backgroundImage": "./assets/images/splash-icon.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "versionCode": 2,
-      "googleServicesFile": "./google-services.json"
+      "predictiveBackGestureEnabled": false
     },
     "web": {
       "bundler": "metro",
@@ -50,12 +52,6 @@
       "reactCompiler": false
     },
     "extra": {
-      "firebaseApiKey": "AIzaSyDzv5FX8AECAsA0a2--XpMD8GK5NOP1Rhg",
-      "firebaseAuthDomain": "leli-rentals-52a08.firebaseapp.com",
-      "firebaseProjectId": "leli-rentals-52a08",
-      "firebaseStorageBucket": "leli-rentals-52a08.firebasestorage.app",
-      "firebaseMessagingSenderId": "220739389697",
-      "firebaseAppId": "1:220739389697:web:701c8d4141b29d88a13300",
       "router": {},
       "eas": {
         "projectId": "db0b20da-6c32-4fa2-8de8-361b9155067d"

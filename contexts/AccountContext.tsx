@@ -62,6 +62,9 @@ export const AccountProvider: React.FC<AccountProviderProps> = ({ children }) =>
             // User logged out, clear account data
             setAccountTypeState(null);
             setVerificationStatus('not_started');
+          } else {
+            // User logged in, reload account data from Firestore
+            loadAccountData();
           }
         });
         
@@ -83,8 +86,30 @@ export const AccountProvider: React.FC<AccountProviderProps> = ({ children }) =>
       if (savedAccountType) {
         setAccountTypeState(savedAccountType as AccountType);
       } else {
-        // No account type selected yet - user needs to choose
-        setAccountTypeState(null);
+        // Check Firestore for user's account type if authenticated
+        try {
+          const { auth } = await import('@/config/firebase');
+          const { FirebaseService } = await import('@/services/FirebaseService');
+          
+          if (auth.currentUser) {
+            const userProfile = await FirebaseService.getUserProfile(auth.currentUser.uid);
+            if (userProfile && userProfile.accountType) {
+              // Load account type from Firestore and save to local storage
+              setAccountTypeState(userProfile.accountType as AccountType);
+              await storage.setItem('accountType', userProfile.accountType);
+            } else {
+              // No account type selected yet - user needs to choose
+              setAccountTypeState(null);
+            }
+          } else {
+            // No user authenticated - user needs to choose
+            setAccountTypeState(null);
+          }
+        } catch (firestoreError) {
+          console.error('Error loading account type from Firestore:', firestoreError);
+          // Fallback to null if Firestore fails
+          setAccountTypeState(null);
+        }
       }
       setVerificationStatus('not_started');
     } catch (error) {
@@ -181,7 +206,7 @@ export const AccountProvider: React.FC<AccountProviderProps> = ({ children }) =>
       ]);
       
       // Reset to default state
-      setAccountTypeState('renter');
+      setAccountTypeState(null);
       setVerificationStatus('not_started');
     } catch (error) {
       console.error('Error during logout:', error);

@@ -36,18 +36,22 @@ const LoginScreen = () => {
   const [password, setPassword] = useState('');
   // password visibility handled within AuthForm
   const [loading, setLoading] = useState(false);
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn } = useAuth();
   const insets = useSafeAreaInsets();
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    // Trim whitespace and check for empty strings
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+    
+    if (!trimmedEmail || !trimmedPassword) {
       showErrorAlert('Almost there!', 'Please fill in all fields to continue.');
       return;
     }
 
     try {
       setLoading(true);
-      await signIn(email, password);
+      await signIn(trimmedEmail, trimmedPassword);
       router.replace('/(tabs)');
     } catch (error: any) {
       const calmMessage = getCalmErrorMessage(error);
