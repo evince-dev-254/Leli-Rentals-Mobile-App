@@ -1,29 +1,38 @@
-import React, { useState } from 'react';
 import {
-  View,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  TextInput,
-  Alert,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { 
-  PrimaryBrand, 
-  Background, 
-  WhiteBackground, 
-  PrimaryText, 
-  SecondaryText, 
-  Border,
-  Success,
-  Error,
-  Warning
+    Background,
+    Border,
+    Error,
+    PrimaryBrand,
+    PrimaryText,
+    SecondaryText,
+    Success,
+    Warning,
+    WhiteBackground
 } from '@/constants/Colors';
+import { showErrorAlert, showSuccessAlert } from '@/utils/alertUtils';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import {
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 const BillingScreen = () => {
   const [selectedTab, setSelectedTab] = useState('overview');
+  const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
+  const [newPaymentType, setNewPaymentType] = useState('');
+  const [newPaymentData, setNewPaymentData] = useState({
+    phone: '',
+    cardNumber: '',
+    expiryDate: '',
+    cvv: '',
+    name: ''
+  });
 
   const paymentMethods = [
     {
@@ -125,6 +134,40 @@ const BillingScreen = () => {
     { id: 'earnings', label: 'Earnings', icon: 'cash-outline' },
   ];
 
+  const handleAddPaymentMethod = () => {
+    setShowAddPaymentModal(true);
+  };
+
+  const handleSavePaymentMethod = () => {
+    if (!newPaymentType) {
+      showErrorAlert('Error', 'Please select a payment method type');
+      return;
+    }
+
+    if (newPaymentType === 'mpesa' || newPaymentType === 'airtel') {
+      if (!newPaymentData.phone) {
+        showErrorAlert('Error', 'Please enter your phone number');
+        return;
+      }
+    } else if (newPaymentType === 'card') {
+      if (!newPaymentData.cardNumber || !newPaymentData.expiryDate || !newPaymentData.cvv || !newPaymentData.name) {
+        showErrorAlert('Error', 'Please fill in all card details');
+        return;
+      }
+    }
+
+    showSuccessAlert('Success', 'Payment method added successfully!');
+    setShowAddPaymentModal(false);
+    setNewPaymentType('');
+    setNewPaymentData({
+      phone: '',
+      cardNumber: '',
+      expiryDate: '',
+      cvv: '',
+      name: ''
+    });
+  };
+
   const renderPaymentMethod = (method) => (
     <View key={method.id} style={styles.paymentMethodCard}>
       <View style={styles.paymentMethodInfo}>
@@ -218,13 +261,9 @@ const BillingScreen = () => {
 
       {/* Quick Actions */}
       <View style={styles.quickActions}>
-        <TouchableOpacity style={styles.quickActionButton}>
+        <TouchableOpacity style={styles.quickActionButton} onPress={() => setSelectedTab('payments')}>
           <Ionicons name="add" size={24} color={WhiteBackground} />
           <Text style={styles.quickActionText}>Add Payment Method</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.quickActionButton}>
-          <Ionicons name="download" size={24} color={WhiteBackground} />
-          <Text style={styles.quickActionText}>Withdraw Funds</Text>
         </TouchableOpacity>
       </View>
 
@@ -247,7 +286,7 @@ const BillingScreen = () => {
       <Text style={styles.sectionTitle}>Payment Methods</Text>
       {paymentMethods.map(renderPaymentMethod)}
       
-      <TouchableOpacity style={styles.addPaymentButton}>
+      <TouchableOpacity style={styles.addPaymentButton} onPress={handleAddPaymentMethod}>
         <Ionicons name="add" size={20} color={PrimaryBrand} />
         <Text style={styles.addPaymentText}>Add New Payment Method</Text>
       </TouchableOpacity>
@@ -335,6 +374,135 @@ const BillingScreen = () => {
           {selectedTab === 'earnings' && renderEarnings()}
         </View>
       </ScrollView>
+
+      {/* Add Payment Method Modal */}
+      {showAddPaymentModal && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add Payment Method</Text>
+              <TouchableOpacity onPress={() => setShowAddPaymentModal(false)}>
+                <Ionicons name="close" size={24} color={SecondaryText} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalContent}>
+              <Text style={styles.modalSubtitle}>Choose payment method type</Text>
+              
+              <View style={styles.paymentTypeOptions}>
+                <TouchableOpacity
+                  style={[
+                    styles.paymentTypeOption,
+                    newPaymentType === 'mpesa' && styles.selectedPaymentType
+                  ]}
+                  onPress={() => setNewPaymentType('mpesa')}
+                >
+                  <Ionicons name="phone-portrait" size={24} color="#00A86B" />
+                  <Text style={styles.paymentTypeText}>M-Pesa</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[
+                    styles.paymentTypeOption,
+                    newPaymentType === 'airtel' && styles.selectedPaymentType
+                  ]}
+                  onPress={() => setNewPaymentType('airtel')}
+                >
+                  <Ionicons name="phone-portrait" size={24} color="#E60000" />
+                  <Text style={styles.paymentTypeText}>Airtel Money</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[
+                    styles.paymentTypeOption,
+                    newPaymentType === 'card' && styles.selectedPaymentType
+                  ]}
+                  onPress={() => setNewPaymentType('card')}
+                >
+                  <Ionicons name="card" size={24} color="#1A1F71" />
+                  <Text style={styles.paymentTypeText}>Credit/Debit Card</Text>
+                </TouchableOpacity>
+              </View>
+
+              {newPaymentType && (
+                <View style={styles.paymentForm}>
+                  {newPaymentType === 'mpesa' || newPaymentType === 'airtel' ? (
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.inputLabel}>Phone Number</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={newPaymentData.phone}
+                        onChangeText={(text) => setNewPaymentData({...newPaymentData, phone: text})}
+                        placeholder="+254 712 345 678"
+                        keyboardType="phone-pad"
+                      />
+                    </View>
+                  ) : (
+                    <>
+                      <View style={styles.inputContainer}>
+                        <Text style={styles.inputLabel}>Cardholder Name</Text>
+                        <TextInput
+                          style={styles.input}
+                          value={newPaymentData.name}
+                          onChangeText={(text) => setNewPaymentData({...newPaymentData, name: text})}
+                          placeholder="John Doe"
+                        />
+                      </View>
+                      <View style={styles.inputContainer}>
+                        <Text style={styles.inputLabel}>Card Number</Text>
+                        <TextInput
+                          style={styles.input}
+                          value={newPaymentData.cardNumber}
+                          onChangeText={(text) => setNewPaymentData({...newPaymentData, cardNumber: text})}
+                          placeholder="1234 5678 9012 3456"
+                          keyboardType="numeric"
+                        />
+                      </View>
+                      <View style={styles.cardRow}>
+                        <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
+                          <Text style={styles.inputLabel}>Expiry Date</Text>
+                          <TextInput
+                            style={styles.input}
+                            value={newPaymentData.expiryDate}
+                            onChangeText={(text) => setNewPaymentData({...newPaymentData, expiryDate: text})}
+                            placeholder="MM/YY"
+                          />
+                        </View>
+                        <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
+                          <Text style={styles.inputLabel}>CVV</Text>
+                          <TextInput
+                            style={styles.input}
+                            value={newPaymentData.cvv}
+                            onChangeText={(text) => setNewPaymentData({...newPaymentData, cvv: text})}
+                            placeholder="123"
+                            keyboardType="numeric"
+                            secureTextEntry
+                          />
+                        </View>
+                      </View>
+                    </>
+                  )}
+                </View>
+              )}
+            </ScrollView>
+            
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => setShowAddPaymentModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.saveButton}
+                onPress={handleSavePaymentMethod}
+              >
+                <Text style={styles.saveButtonText}>Add Payment Method</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -705,6 +873,128 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: SecondaryText,
     marginTop: 12,
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: WhiteBackground,
+    borderRadius: 12,
+    margin: 20,
+    maxWidth: 400,
+    width: '100%',
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: Border,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: PrimaryText,
+  },
+  modalContent: {
+    padding: 20,
+    maxHeight: 400,
+  },
+  modalSubtitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: PrimaryText,
+    marginBottom: 16,
+  },
+  paymentTypeOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 20,
+  },
+  paymentTypeOption: {
+    flex: 1,
+    minWidth: '30%',
+    backgroundColor: WhiteBackground,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: Border,
+  },
+  selectedPaymentType: {
+    borderColor: PrimaryBrand,
+    backgroundColor: PrimaryBrand + '10',
+  },
+  paymentTypeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: PrimaryText,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  paymentForm: {
+    marginTop: 20,
+  },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: PrimaryText,
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: Border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: PrimaryText,
+  },
+  cardRow: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    padding: 20,
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: Background,
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: SecondaryText,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: PrimaryBrand,
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: WhiteBackground,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

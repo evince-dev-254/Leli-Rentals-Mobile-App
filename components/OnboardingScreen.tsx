@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import {
-  View,
-  StyleSheet,
-  Dimensions,
-  ScrollView,
-  TouchableOpacity,
-  Text,
-  Image,
-} from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import ThemeAwareLogo from './ThemeAwareLogo';
+import { useState } from 'react';
+import {
+    Dimensions,
+    Image,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -78,13 +78,26 @@ const onboardingData = [
 
 const OnboardingScreen = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const insets = useSafeAreaInsets();
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentIndex < onboardingData.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
+      // Mark onboarding as completed
+      if (Platform.OS === 'web') {
+        localStorage.setItem('hasSeenOnboarding', 'true');
+      } else {
+        // For mobile, use localStorage as fallback
+        try {
+          localStorage.setItem('hasSeenOnboarding', 'true');
+        } catch (error) {
+          // If localStorage is not available, just continue
+          console.log('localStorage not available, continuing...');
+        }
+      }
       // Navigate to login page
-      router.push('/login');
+      router.replace('/login');
     }
   };
 
@@ -94,9 +107,21 @@ const OnboardingScreen = () => {
     }
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
+    // Mark onboarding as completed
+    if (Platform.OS === 'web') {
+      localStorage.setItem('hasSeenOnboarding', 'true');
+    } else {
+      // For mobile, use localStorage as fallback
+      try {
+        localStorage.setItem('hasSeenOnboarding', 'true');
+      } catch (error) {
+        // If localStorage is not available, just continue
+        console.log('localStorage not available, continuing...');
+      }
+    }
     // Navigate to login page
-    router.push('/login');
+    router.replace('/login');
   };
 
   const currentSlide = onboardingData[currentIndex];
@@ -163,7 +188,7 @@ const OnboardingScreen = () => {
           ))}
         </View>
 
-        <View style={styles.buttonContainer}>
+        <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
           <TouchableOpacity
             onPress={handleSkip}
             style={styles.skipButton}

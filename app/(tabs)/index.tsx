@@ -1,41 +1,37 @@
-import React, { useState, useEffect } from 'react';
 import { Image } from 'expo-image';
-import { StyleSheet, TouchableOpacity, View, ScrollView, Text, Dimensions, Animated } from 'react-native';
 import { router } from 'expo-router';
-import { Video, ResizeMode } from 'expo-av';
+import { useEffect, useState } from 'react';
+import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
-import ThemeAwareLogo from '@/components/ThemeAwareLogo';
-import NotificationBell from '@/components/NotificationBell';
-import AnimatedCard from '@/components/AnimatedCard';
 import AIChat from '@/components/AIChat';
-import { useTheme } from '@/contexts/ThemeContext';
-import { useAccount } from '@/contexts/AccountContext';
-import { 
-  PrimaryBrand, 
-  Background, 
-  WhiteBackground, 
-  PrimaryText, 
-  SecondaryText, 
-  Border,
-  VibrantPurple,
-  VibrantOrange,
-  VibrantPink,
-  VibrantGreen,
-  VibrantRed,
-  VibrantCyan,
-  DarkBackground,
-  DarkCard,
-  DarkForeground,
-  DarkMutedText,
-  DarkBorder,
-  DarkText,
-  DarkSecondaryText
+import NotificationBell from '@/components/NotificationBell';
+import ThemeAwareLogo from '@/components/ThemeAwareLogo';
+import {
+    Background,
+    Border,
+    DarkBackground,
+    DarkBorder,
+    DarkCard,
+    DarkSecondaryText,
+    DarkText,
+    PrimaryBrand,
+    PrimaryText,
+    SecondaryText,
+    VibrantCyan,
+    VibrantGreen,
+    VibrantOrange,
+    VibrantPink,
+    VibrantPurple,
+    VibrantRed,
+    WhiteBackground
 } from '@/constants/Colors';
+import { useAccount } from '@/contexts/AccountContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function HomeScreen() {
   const { isDark } = useTheme();
-  const { accountType, isOwnerVerified } = useAccount();
+  const { accountType } = useAccount();
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [animatedValues] = useState(() => 
     Array.from({ length: 6 }, () => new Animated.Value(1))
@@ -147,13 +143,6 @@ export default function HomeScreen() {
   // Owner Dashboard Content
   const renderOwnerContent = () => (
     <ScrollView style={[styles.container, { backgroundColor: isDark ? DarkBackground : Background }]} showsVerticalScrollIndicator={false}>
-      {/* Back Button */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => router.push('/(tabs)/home')}
-      >
-        <Ionicons name="arrow-back" size={24} color={PrimaryBrand} />
-      </TouchableOpacity>
 
       {/* Owner Header */}
       <View style={[styles.header, { backgroundColor: isDark ? DarkCard : WhiteBackground }]}>
@@ -198,6 +187,18 @@ export default function HomeScreen() {
       <View style={[styles.section, { backgroundColor: isDark ? DarkCard : WhiteBackground, borderColor: isDark ? DarkBorder : Border }]}>
         <Text style={[styles.sectionTitle, { color: isDark ? DarkText : PrimaryText }]}>Dashboard Actions</Text>
         <View style={styles.quickActionsGrid}>
+          <TouchableOpacity style={styles.quickActionCard} onPress={() => router.push('/owner-listings')}>
+            <View style={styles.quickActionIcon}>
+              <Ionicons name="list" size={24} color={PrimaryBrand} />
+            </View>
+            <Text style={styles.quickActionText}>My Listings</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickActionCard} onPress={() => router.push('/create-listing')}>
+            <View style={styles.quickActionIcon}>
+              <Ionicons name="add" size={24} color={PrimaryBrand} />
+            </View>
+            <Text style={styles.quickActionText}>Create Listing</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.quickActionCard} onPress={() => router.push('/admin/analytics')}>
             <View style={styles.quickActionIcon}>
               <Ionicons name="analytics" size={24} color={PrimaryBrand} />
@@ -267,7 +268,7 @@ export default function HomeScreen() {
         <Text style={[styles.aiDescription, { color: isDark ? DarkSecondaryText : SecondaryText }]}>
           Get instant help with your rental business. Ask about analytics, customer management, pricing strategies, and more.
         </Text>
-        <AIChat />
+        <AIChat onClose={() => {}} />
       </View>
     </ScrollView>
   );
@@ -302,7 +303,7 @@ export default function HomeScreen() {
       <View style={[styles.section, { backgroundColor: isDark ? DarkCard : WhiteBackground, borderColor: isDark ? DarkBorder : Border }]}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.quickActionsGrid}>
-          <TouchableOpacity style={styles.quickActionCard} onPress={() => router.push('/profile/')}>
+          <TouchableOpacity style={styles.quickActionCard} onPress={() => router.push('/profile')}>
             <View style={styles.quickActionIcon}>
               <Ionicons name="person" size={24} color={PrimaryBrand} />
             </View>
@@ -319,6 +320,12 @@ export default function HomeScreen() {
               <Ionicons name="help-circle" size={24} color={PrimaryBrand} />
             </View>
             <Text style={styles.quickActionText}>Get Help</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickActionCard} onPress={() => router.push('/owner-preview')}>
+            <View style={styles.quickActionIcon}>
+              <Ionicons name="trending-up" size={24} color={VibrantGreen} />
+            </View>
+            <Text style={styles.quickActionText}>Become Owner</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.quickActionCard} onPress={() => router.push('/about')}>
             <View style={styles.quickActionIcon}>
@@ -448,20 +455,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Background,
-  },
-  backButton: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    zIndex: 10,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderRadius: 20,
-    padding: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   header: {
     paddingTop: 50,
@@ -876,20 +869,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
     marginBottom: 20,
-  },
-  backgroundVideo: {
-    width: '100%',
-    height: '100%',
-  },
-  videoOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   videoContent: {
     alignItems: 'center',

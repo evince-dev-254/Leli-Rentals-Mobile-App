@@ -33,6 +33,7 @@ export const Info = '#3b82f6';
 
 // Vibrant Accent Colors
 export const VibrantPurple = '#8b5cf6';
+export const VibrantPlum = '#8b5cf6'; // Plum color for alerts
 export const VibrantPink = '#ec4899';
 export const VibrantGreen = '#10b981';
 export const VibrantOrange = '#f59e0b';
@@ -43,6 +44,7 @@ export const VibrantCyan = '#06b6d4';
 export const VibrantLime = '#84cc16';
 export const VibrantYellow = '#eab308';
 export const VibrantRose = '#f43f5e';
+export const VibrantBlue = '#3b82f6';
 
 // Dark Theme Colors (Bright and Visible)
 export const DarkBackground = '#1a1a1a'; // Brighter dark background

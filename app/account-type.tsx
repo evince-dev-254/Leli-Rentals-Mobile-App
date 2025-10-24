@@ -1,43 +1,51 @@
-import React, { useState } from 'react';
-import {
-  View,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  Image,
-  ScrollView,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import BackButton from '@/components/BackButton';
 import { useAccount } from '@/contexts/AccountContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import {
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const AccountTypeScreen = () => {
-  const { setAccountType } = useAccount();
+  const { setAccountType, accountType } = useAccount();
+  const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [selectedType, setSelectedType] = useState('');
+
+  // Check if user already has an account type
+  useEffect(() => {
+    if (user && accountType) {
+      // User already has an account type, redirect to main app
+      router.push('/(tabs)');
+    }
+  }, [user, accountType]);
 
   const handleContinue = async () => {
     if (selectedType === 'renter') {
       await setAccountType('renter');
-      router.replace('/(tabs)');
+      router.push('/(tabs)');
     } else if (selectedType === 'owner') {
       await setAccountType('owner');
-      router.replace('/(tabs)');
+      router.push('/(tabs)');
     }
   };
 
   return (
     <ScrollView style={styles.container}>
       {/* Animated Back Button */}
-      <TouchableOpacity 
-        style={styles.backButton} 
-        onPress={() => router.push('/login')}
-      >
-        <Ionicons name="arrow-back" size={24} color="#d97706" />
-      </TouchableOpacity>
+      <BackButton onPress={() => router.push('/login')} />
 
       <View style={styles.content}>
         <Text style={styles.title}>Choose Your Account Type</Text>
-        <Text style={styles.subtitle}>Select how you'd like to use Leli Rentals</Text>
+        <Text style={styles.subtitle}>Select how you&apos;d like to use Leli Rentals</Text>
 
         {/* Renter Option */}
         <TouchableOpacity 
@@ -58,7 +66,7 @@ const AccountTypeScreen = () => {
             </View>
           </View>
           <View style={styles.optionContent}>
-            <Text style={styles.optionTitle}>I'm a Renter</Text>
+            <Text style={styles.optionTitle}>I&apos;m a Renter</Text>
             <Text style={styles.optionDescription}>
               Find and rent items for your projects, events, or daily needs
             </Text>
@@ -94,7 +102,7 @@ const AccountTypeScreen = () => {
             </View>
           </View>
           <View style={styles.optionContent}>
-            <Text style={styles.optionTitle}>I'm an Owner</Text>
+            <Text style={styles.optionTitle}>I&apos;m an Owner</Text>
             <Text style={styles.optionDescription}>
               List your items and earn money by renting them out
             </Text>
@@ -115,7 +123,8 @@ const AccountTypeScreen = () => {
         <TouchableOpacity 
           style={[
             styles.continueButton,
-            !selectedType && styles.disabledButton
+            !selectedType && styles.disabledButton,
+            { marginBottom: Math.max(insets.bottom, 20) }
           ]}
           onPress={handleContinue}
           disabled={!selectedType}
@@ -136,23 +145,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fefce8',
-  },
-  backButton: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    zIndex: 10,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   content: {
     flex: 1,

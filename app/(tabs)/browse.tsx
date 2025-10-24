@@ -1,38 +1,37 @@
-import React, { useState } from 'react';
+import BackButton from '@/components/BackButton';
 import {
-  View,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  TextInput,
-  Image,
-  FlatList,
-  Alert,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/contexts/ThemeContext';
-import { 
-  PrimaryBrand, 
-  Background, 
-  WhiteBackground, 
-  PrimaryText, 
-  SecondaryText, 
-  Border,
-  VibrantOrange,
-  VibrantGreen,
-  VibrantPurple,
-  VibrantPink,
-  VibrantCyan,
-  DarkText,
-  DarkCard,
-  DarkBorder,
-  DarkSecondaryText
+    Background,
+    Border,
+    DarkBorder,
+    DarkCard,
+    DarkSecondaryText,
+    DarkText,
+    PrimaryBrand,
+    PrimaryText,
+    SecondaryText,
+    VibrantOrange,
+    WhiteBackground
 } from '@/constants/Colors';
+import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import { NotificationService } from '@/services/NotificationService';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import {
+    Alert,
+    FlatList,
+    Image,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from 'react-native';
 
 const BrowseScreen = () => {
   const { isDark } = useTheme();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
@@ -793,7 +792,21 @@ const BrowseScreen = () => {
         { text: 'Cancel', style: 'cancel' },
         { 
           text: 'Rent Now', 
-          onPress: () => {
+          onPress: async () => {
+            // Send notifications
+            try {
+              // Send booking confirmation to renter
+              await NotificationService.sendBookingNotification(item.title);
+              
+              // Send rental notification to owner (use current user's name)
+              const renterName = user?.displayName || user?.email?.split('@')[0] || 'User';
+              await NotificationService.sendRentalNotification(item.title, renterName);
+              
+              console.log('Notifications sent successfully');
+            } catch (error) {
+              console.log('Error sending notifications:', error);
+            }
+            
             // Navigate to booking/rental flow
             router.push('/booking-calendar');
           }
@@ -860,12 +873,7 @@ const BrowseScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: isDark ? Background : Background }]}>
       {/* Back Button */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => router.push('/(tabs)')}
-      >
-        <Ionicons name="arrow-back" size={24} color={PrimaryBrand} />
-      </TouchableOpacity>
+      <BackButton onPress={() => router.push('/(tabs)')} />
 
       {/* Header */}
       <View style={styles.header}>
@@ -935,20 +943,6 @@ const BrowseScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  backButton: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    zIndex: 10,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderRadius: 20,
-    padding: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   header: {
     paddingHorizontal: 20,

@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import {
-  View,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  Image,
-  ScrollView,
-  TextInput,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import LocationPicker from '@/components/LocationPicker';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import {
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 const OwnerDashboardScreen = () => {
   const [setupStep, setSetupStep] = useState(1);
@@ -120,9 +120,9 @@ const OwnerDashboardScreen = () => {
       case 3:
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Almost done!</Text>
+            <Text style={styles.stepTitle}>Ready to start earning!</Text>
             <Text style={styles.stepDescription}>
-              Add your location to help renters find your items
+              Your account is set up. Now let's add your first listing to start earning money.
             </Text>
             
             <View style={styles.inputGroup}>
@@ -151,6 +151,14 @@ const OwnerDashboardScreen = () => {
                 <Text style={styles.summaryValue}>{location || 'Not provided'}</Text>
               </View>
             </View>
+
+            <TouchableOpacity 
+              style={styles.addListingButton}
+              onPress={() => router.push('/owner-listings')}
+            >
+              <Ionicons name="add" size={24} color="#ffffff" />
+              <Text style={styles.addListingButtonText}>Manage Your Listings</Text>
+            </TouchableOpacity>
           </View>
         );
 
@@ -398,6 +406,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#ffffff',
     fontWeight: 'bold',
+  },
+  addListingButton: {
+    backgroundColor: '#10b981',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    shadowColor: '#10b981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  addListingButtonText: {
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: 'bold',
+    marginLeft: 8,
   },
 });
 

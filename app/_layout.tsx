@@ -1,11 +1,11 @@
-import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
+import { DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AccountProvider } from '@/contexts/AccountContext';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -13,9 +13,10 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      <AccountProvider>
-        <NavigationThemeProvider value={DefaultTheme}>
+    <AuthProvider>
+      <ThemeProvider>
+        <AccountProvider>
+          <NavigationThemeProvider value={DefaultTheme}>
         <Stack>
           <Stack.Screen name="onboarding" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false }} />
@@ -38,18 +39,24 @@ export default function RootLayout() {
           <Stack.Screen name="test-database" options={{ headerShown: false }} />
           <Stack.Screen name="billing" options={{ headerShown: false }} />
           <Stack.Screen name="my-listings" options={{ headerShown: false }} />
+          <Stack.Screen name="owner-listings" options={{ headerShown: false }} />
+          <Stack.Screen name="create-listing" options={{ headerShown: false }} />
+          <Stack.Screen name="payment-completion" options={{ headerShown: false }} />
           <Stack.Screen name="my-bookings" options={{ headerShown: false }} />
           <Stack.Screen name="favorites" options={{ headerShown: false }} />
           <Stack.Screen name="reviews" options={{ headerShown: false }} />
           <Stack.Screen name="settings" options={{ headerShown: false }} />
           <Stack.Screen name="booking-calendar" options={{ headerShown: false }} />
           <Stack.Screen name="contact-owner" options={{ headerShown: false }} />
+          <Stack.Screen name="owner-preview" options={{ headerShown: false }} />
+          <Stack.Screen name="write-review" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         </Stack>
         <StatusBar style="auto" />
         </NavigationThemeProvider>
-      </AccountProvider>
-    </ThemeProvider>
+        </AccountProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }

@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "220739389697",
+    "project_id": "leli-rentals-52a08",
+    "storage_bucket": "leli-rentals-52a08.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:220739389697:android:9c46519b0a302eb3a13300",
+        "android_client_info": {
+          "package_name": "com.Leli.Rentals"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "220739389697-ig93muja25bgb35j4lbos4e0so89mmi6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA8YiNONTM3J39dRTzq-cDRRUHHGgB-JO0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "220739389697-ig93muja25bgb35j4lbos4e0so89mmi6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

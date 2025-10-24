@@ -1,7 +1,28 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
-export type AccountType = 'renter' | 'owner';
+// Simplified storage - use in-memory storage for mobile
+const getStorage = () => {
+  // Use in-memory storage for mobile to avoid localStorage issues
+  const memoryStorage: { [key: string]: string } = {};
+  
+  return {
+    getItem: (key: string) => Promise.resolve(memoryStorage[key] || null),
+    setItem: (key: string, value: string) => {
+      memoryStorage[key] = value;
+      return Promise.resolve();
+    },
+    removeItem: (key: string) => {
+      delete memoryStorage[key];
+      return Promise.resolve();
+    },
+    multiRemove: (keys: string[]) => {
+      keys.forEach(key => delete memoryStorage[key]);
+      return Promise.resolve();
+    }
+  };
+};
+
+export type AccountType = 'renter' | 'owner' | null;
 export type VerificationStatus = 'pending' | 'verified' | 'rejected' | 'not_started';
 
 interface AccountContextType {
@@ -22,33 +43,77 @@ interface AccountProviderProps {
 }
 
 export const AccountProvider: React.FC<AccountProviderProps> = ({ children }) => {
-  const [accountType, setAccountTypeState] = useState<AccountType>('renter');
+  const [accountType, setAccountTypeState] = useState<AccountType>(null);
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>('not_started');
 
   useEffect(() => {
     loadAccountData();
   }, []);
 
+  // Listen for auth state changes to clear account data when user logs out
+  useEffect(() => {
+    const checkAuthState = async () => {
+      try {
+        const { auth } = await import('@/config/firebase');
+        const { onAuthStateChanged } = await import('firebase/auth');
+        
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+          if (!user) {
+            // User logged out, clear account data
+            setAccountTypeState(null);
+            setVerificationStatus('not_started');
+          }
+        });
+        
+        return unsubscribe;
+      } catch (error) {
+        console.error('Error setting up auth state listener:', error);
+      }
+    };
+    
+    checkAuthState();
+  }, []);
+
   const loadAccountData = async () => {
     try {
-      const storedAccountType = await AsyncStorage.getItem('accountType');
-      const storedVerificationStatus = await AsyncStorage.getItem('verificationStatus');
+      // Check if user has already selected an account type
+      const storage = getStorage();
+      const savedAccountType = await storage.getItem('accountType');
       
-      if (storedAccountType) {
-        setAccountTypeState(storedAccountType as AccountType);
+      if (savedAccountType) {
+        setAccountTypeState(savedAccountType as AccountType);
+      } else {
+        // No account type selected yet - user needs to choose
+        setAccountTypeState(null);
       }
-      if (storedVerificationStatus) {
-        setVerificationStatus(storedVerificationStatus as VerificationStatus);
-      }
+      setVerificationStatus('not_started');
     } catch (error) {
       console.error('Error loading account data:', error);
+      // Default to null if there's an error
+      setAccountTypeState(null);
     }
   };
 
   const setAccountType = async (type: AccountType) => {
     try {
       setAccountTypeState(type);
-      await AsyncStorage.setItem('accountType', type);
+      // Save account type to storage
+      const storage = getStorage();
+      await storage.setItem('accountType', type || '');
+      
+      // Update user profile in Firestore if user is authenticated
+      try {
+        const { auth } = await import('@/config/firebase');
+        const { FirebaseService } = await import('@/services/FirebaseService');
+        
+        if (auth.currentUser) {
+          await FirebaseService.updateUserProfile(auth.currentUser.uid, {
+            accountType: type,
+          });
+        }
+      } catch (error) {
+        console.error('Error updating account type in Firestore:', error);
+      }
     } catch (error) {
       console.error('Error saving account type:', error);
     }
@@ -57,24 +122,58 @@ export const AccountProvider: React.FC<AccountProviderProps> = ({ children }) =>
   const updateVerificationStatus = async (status: VerificationStatus) => {
     try {
       setVerificationStatus(status);
-      await AsyncStorage.setItem('verificationStatus', status);
+      // Simplified - no storage saving
     } catch (error) {
       console.error('Error saving verification status:', error);
     }
   };
 
-  const switchToOwner = () => {
-    setAccountType('owner');
+  const switchToOwner = async () => {
+    try {
+      console.log('Switching to owner...');
+      await setAccountType('owner');
+      // Reset verification status when switching to owner
+      setVerificationStatus('not_started');
+      const storage = getStorage();
+      await storage.setItem('verificationStatus', 'not_started');
+      console.log('Successfully switched to owner');
+    } catch (error) {
+      console.error('Error switching to owner:', error);
+    }
   };
 
-  const switchToRenter = () => {
-    setAccountType('renter');
+  const scheduleVerificationReminder = async () => {
+    try {
+      const storage = getStorage();
+      const reminderDate = new Date();
+      reminderDate.setDate(reminderDate.getDate() + 2); // 2 days from now
+      
+      await storage.setItem('verificationReminderDate', reminderDate.toISOString());
+      await storage.setItem('verificationReminderSent', 'false');
+    } catch (error) {
+      console.error('Error scheduling verification reminder:', error);
+    }
+  };
+
+  const switchToRenter = async () => {
+    try {
+      console.log('Switching to renter...');
+      await setAccountType('renter');
+      // Clear verification status when switching to renter
+      setVerificationStatus('not_started');
+      const storage = getStorage();
+      await storage.setItem('verificationStatus', 'not_started');
+      console.log('Successfully switched to renter');
+    } catch (error) {
+      console.error('Error switching to renter:', error);
+    }
   };
 
   const logout = async () => {
     try {
       // Clear all stored data
-      await AsyncStorage.multiRemove([
+      const storage = getStorage();
+      await storage.multiRemove([
         'accountType',
         'verificationStatus',
         'userSession',

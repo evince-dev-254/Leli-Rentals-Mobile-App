@@ -1,36 +1,31 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView, 
-  Text, 
-  Image,
-  Animated
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/contexts/ThemeContext';
 import ThemeAwareLogo from '@/components/ThemeAwareLogo';
-import { 
-  PrimaryBrand, 
-  Background, 
-  WhiteBackground, 
-  PrimaryText, 
-  SecondaryText, 
-  Border,
-  DarkBackground,
-  DarkCard,
-  DarkText,
-  DarkSecondaryText,
-  DarkBorder,
-  VibrantPurple,
-  VibrantOrange,
-  VibrantPink,
-  VibrantGreen,
-  VibrantRed,
-  VibrantCyan
+import {
+    Background,
+    Border,
+    DarkBackground,
+    DarkCard,
+    DarkSecondaryText,
+    DarkText,
+    PrimaryBrand,
+    PrimaryText,
+    SecondaryText,
+    VibrantGreen,
+    VibrantOrange,
+    VibrantPurple,
+    WhiteBackground
 } from '@/constants/Colors';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import {
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
 
 export default function ReviewsScreen() {
   const { isDark } = useTheme();
@@ -107,6 +102,15 @@ export default function ReviewsScreen() {
         <Text style={[styles.subtitle, { color: isDark ? DarkSecondaryText : SecondaryText }]}>
           Manage your reviews and ratings
         </Text>
+        
+        {/* Write Review Button */}
+        <TouchableOpacity 
+          style={[styles.writeReviewButton, { backgroundColor: PrimaryBrand }]}
+          onPress={() => router.push('/write-review')}
+        >
+          <Ionicons name="create-outline" size={20} color={WhiteBackground} />
+          <Text style={styles.writeReviewText}>Write a Review</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Stats */}
@@ -422,5 +426,20 @@ const styles = StyleSheet.create({
     color: WhiteBackground,
     fontSize: 16,
     fontWeight: '600',
+  },
+  writeReviewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  writeReviewText: {
+    color: WhiteBackground,
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });

@@ -1,48 +1,55 @@
-import React, { useState } from 'react';
+import BackButton from '@/components/BackButton';
 import {
-  View,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useAccount } from '@/contexts/AccountContext';
-import { 
-  PrimaryBrand, 
-  Background, 
-  WhiteBackground, 
-  InputBackground, 
-  PrimaryText, 
-  SecondaryText, 
-  Border, 
-  Success, 
-  Error 
+    Background,
+    Border,
+    Error,
+    InputBackground,
+    PrimaryBrand,
+    PrimaryText,
+    SecondaryText,
+    Success,
+    WhiteBackground
 } from '@/constants/Colors';
+import { useAuth } from '@/contexts/AuthContext';
+// import { GoogleAuthService } from '@/services/GoogleAuthService'; // Temporarily disabled
+import { showErrorAlert, showSuccessAlert } from '@/utils/alertUtils';
+import { getCalmErrorMessage } from '@/utils/errorMessages';
+import { navigateToOnboarding } from '@/utils/navigation';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import {
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SignupScreen = () => {
-  const { setAccountType } = useAccount();
+  const { signUp } = useAuth();
+  const insets = useSafeAreaInsets();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [emailValid, setEmailValid] = useState(null);
+  const [emailValid, setEmailValid] = useState<boolean | null>(null);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  const validateEmail = (email) => {
+  const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  const checkPasswordStrength = (password) => {
+  const checkPasswordStrength = (password: string) => {
     let strength = 0;
     if (password.length >= 8) strength++;
     if (/[A-Z]/.test(password)) strength++;
@@ -52,7 +59,7 @@ const SignupScreen = () => {
     return strength;
   };
 
-  const handleEmailChange = (text) => {
+  const handleEmailChange = (text: string) => {
     setEmail(text);
     if (text.length > 0) {
       setEmailValid(validateEmail(text));
@@ -61,34 +68,53 @@ const SignupScreen = () => {
     }
   };
 
-  const handlePasswordChange = (text) => {
+  const handlePasswordChange = (text: string) => {
     setPassword(text);
     setPasswordStrength(checkPasswordStrength(text));
   };
 
+  // Google Sign-In temporarily disabled for testing
+  // const handleGoogleSignUp = async () => {
+  //   try {
+  //     setIsLoading(true);
+  //     const result = await GoogleAuthService.signInWithGoogle();
+      
+  //     if (result.success) {
+  //       // User profile is automatically created by GoogleAuthService
+  //       router.replace('/(tabs)');
+  //     } else {
+  //       Alert.alert('Google Sign-Up Failed', result.error || 'An error occurred during Google sign-up');
+  //     }
+  //   } catch (error: any) {
+  //     Alert.alert('Google Sign-Up Error', error.message || 'An error occurred during Google sign-up');
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
   const handleSignup = async () => {
     if (!fullName || !email || !password || !confirmPassword) {
-      alert('Please fill in all fields.');
+      showErrorAlert('Almost there!', 'Please fill in all fields to create your account.');
       return;
     }
     if (password !== confirmPassword) {
-      alert('Passwords do not match.');
+      showErrorAlert('Password Mismatch', 'Your passwords don\'t match. Please make sure they\'re the same.');
       return;
     }
     if (!emailValid) {
-      alert('Please enter a valid email address.');
+      showErrorAlert('Email Check', 'Please enter a valid email address to continue.');
       return;
     }
     if (passwordStrength < 3) {
-      alert('Password is too weak. Please use a stronger password.');
+      showErrorAlert('Password Strength', 'For your security, please choose a stronger password with at least 8 characters.');
       return;
     }
 
     try {
       setIsLoading(true);
       
-      // Simulate API call for signup
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Create Firebase user account
+      await signUp(email, password, fullName);
       
       // Save user data to AsyncStorage (in a real app, this would be sent to a server)
       const userData = {
@@ -102,14 +128,12 @@ const SignupScreen = () => {
       // Store user data (simulating account creation)
       console.log('Account created successfully:', userData);
       
-      // Show success message
-      alert('Account created successfully! Please choose your account type.');
-      
-      // Navigate to account type selection
+      // Navigate directly to account type selection
       router.replace('/account-type');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Signup error:', error);
-      alert('Signup failed. Please try again.');
+      const calmMessage = getCalmErrorMessage(error);
+      showSuccessAlert('Create Account', calmMessage);
     } finally {
       setIsLoading(false);
     }
@@ -120,19 +144,17 @@ const SignupScreen = () => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView contentContainerStyle={[styles.scrollContainer, { paddingBottom: Math.max(insets.bottom, 10) }]}>
         {/* Animated Back Button */}
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={24} color={PrimaryBrand} />
-        </TouchableOpacity>
+        <BackButton onPress={navigateToOnboarding} />
 
         <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>🏠</Text>
-          </View>
+          {/* Brand logo */}
+          <Image 
+            source={require('../assets/images/default-monochrome-black.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Join Leli Rentals today!</Text>
         </View>
@@ -234,10 +256,17 @@ const SignupScreen = () => {
             <View style={styles.dividerLine} />
           </View>
 
-          <TouchableOpacity style={styles.googleButton}>
+          {/* Google Sign-In temporarily disabled for testing */}
+          {/* <TouchableOpacity 
+            style={[styles.googleButton, isLoading && styles.googleButtonDisabled]} 
+            onPress={handleGoogleSignUp}
+            disabled={isLoading}
+          >
             <Ionicons name="logo-google" size={20} color={PrimaryBrand} />
-            <Text style={styles.googleButtonText}>Continue with Google</Text>
-          </TouchableOpacity>
+            <Text style={styles.googleButtonText}>
+              {isLoading ? 'Signing Up...' : 'Continue with Google'}
+            </Text>
+          </TouchableOpacity> */}
 
           <View style={styles.footerTextContainer}>
             <Text style={styles.footerText}>Already have an account? </Text>
@@ -252,36 +281,26 @@ const SignupScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  logoImage: {
+    width: 180,
+    height: 180,
+    marginBottom: 12,
+  },
   container: {
     flex: 1,
     backgroundColor: Background,
   },
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  backButton: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 20,
-    left: 20,
-    zIndex: 1,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    justifyContent: 'flex-start',
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 10,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
-    marginTop: 60,
+    marginBottom: 20,
+    marginTop: 40,
   },
   logoContainer: {
     width: 80,
@@ -314,14 +333,15 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 400,
     alignSelf: 'center',
+    marginTop: 4,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: InputBackground,
     borderRadius: 12,
-    paddingHorizontal: 15,
-    marginBottom: 15,
+    paddingHorizontal: 14,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: Border,
   },
@@ -357,14 +377,9 @@ const styles = StyleSheet.create({
   signupButton: {
     backgroundColor: PrimaryBrand,
     borderRadius: 12,
-    paddingVertical: 15,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 20,
-    shadowColor: PrimaryBrand,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    marginTop: 14,
   },
   signupButtonDisabled: {
     backgroundColor: SecondaryText,
@@ -378,7 +393,7 @@ const styles = StyleSheet.create({
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20,
+    marginVertical: 14,
   },
   dividerLine: {
     flex: 1,
@@ -396,16 +411,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: WhiteBackground,
     borderRadius: 12,
-    paddingVertical: 15,
+    paddingVertical: 14,
     borderWidth: 1,
     borderColor: Border,
-    marginBottom: 20,
+    marginBottom: 14,
   },
   googleButtonText: {
     color: PrimaryBrand,
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 10,
+  },
+  googleButtonDisabled: {
+    opacity: 0.6,
   },
   footerTextContainer: {
     flexDirection: 'row',

@@ -1,41 +1,42 @@
-import React, { useState } from 'react';
-import {
-  View,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  TextInput,
-  Image,
-  Alert,
-  Platform,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/contexts/ThemeContext';
-import { useAccount } from '@/contexts/AccountContext';
+import BackButton from '@/components/BackButton';
 import ThemeAwareLogo from '@/components/ThemeAwareLogo';
-import { 
-  PrimaryBrand, 
-  Background, 
-  WhiteBackground, 
-  PrimaryText, 
-  SecondaryText, 
-  Border,
-  DarkBackground,
-  DarkCard,
-  DarkText,
-  DarkSecondaryText,
-  DarkBorder,
-  VibrantGreen,
-  VibrantRed,
-  VibrantOrange,
-  VibrantPurple
+import {
+    Background,
+    Border,
+    DarkBackground,
+    DarkBorder,
+    DarkCard,
+    DarkSecondaryText,
+    DarkText,
+    PrimaryBrand,
+    PrimaryText,
+    SecondaryText,
+    VibrantGreen,
+    VibrantOrange,
+    VibrantPurple,
+    VibrantRed,
+    WhiteBackground
 } from '@/constants/Colors';
+import { useAccount } from '@/contexts/AccountContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import {
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const OwnerVerificationScreen = () => {
   const { isDark } = useTheme();
-  const { setVerificationStatus, setIsOwnerVerified } = useAccount();
+  const { updateVerificationStatus } = useAccount();
+  const insets = useSafeAreaInsets();
   const [currentStep, setCurrentStep] = useState(1);
   const [verificationData, setVerificationData] = useState({
     fullName: '',
@@ -86,8 +87,7 @@ const OwnerVerificationScreen = () => {
         console.log('Verification data:', verificationData);
         
         // Update account context
-        await setVerificationStatus('pending');
-        await setIsOwnerVerified(false);
+        await updateVerificationStatus('pending');
         
         Alert.alert(
           'Verification Submitted',
@@ -366,12 +366,7 @@ const OwnerVerificationScreen = () => {
     <View style={[styles.container, { backgroundColor: isDark ? DarkBackground : Background }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: isDark ? DarkCard : WhiteBackground }]}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={24} color={isDark ? DarkText : PrimaryText} />
-        </TouchableOpacity>
+        <BackButton onPress={() => router.back()} />
         
         <View style={styles.headerContent}>
           <View style={styles.logoContainer}>
@@ -409,7 +404,7 @@ const OwnerVerificationScreen = () => {
       </ScrollView>
 
       {/* Navigation Buttons */}
-      <View style={[styles.navigationContainer, { backgroundColor: isDark ? DarkCard : WhiteBackground }]}>
+      <View style={[styles.navigationContainer, { backgroundColor: isDark ? DarkCard : WhiteBackground, paddingBottom: Math.max(insets.bottom, 20) }]}>
         <View style={styles.buttonContainer}>
           {currentStep > 1 && (
             <TouchableOpacity 
@@ -449,13 +444,6 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     borderBottomWidth: 1,
     borderBottomColor: Border,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   headerContent: {
     flex: 1,

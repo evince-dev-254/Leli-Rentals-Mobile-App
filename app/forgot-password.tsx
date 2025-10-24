@@ -1,46 +1,56 @@
-import React, { useState } from 'react';
+import BackButton from '@/components/BackButton';
 import {
-  View,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { 
-  PrimaryBrand, 
-  Background, 
-  WhiteBackground, 
-  InputBackground, 
-  PrimaryText, 
-  SecondaryText, 
-  Border, 
-  Success, 
-  Error 
+    Background,
+    Border,
+    InputBackground,
+    PrimaryBrand,
+    PrimaryText,
+    SecondaryText,
+    Success,
+    WhiteBackground
 } from '@/constants/Colors';
+import { useAuth } from '@/contexts/AuthContext';
+import { showErrorAlert, showSuccessAlert } from '@/utils/alertUtils';
+import { getCalmErrorMessage } from '@/utils/errorMessages';
+import { navigateToLogin } from '@/utils/navigation';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import {
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const ForgotPasswordScreen = () => {
+  const { resetPassword } = useAuth();
+  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async () => {
     if (!email) {
-      alert('Please enter your email address.');
+      showErrorAlert('Email Required', 'Please enter your email address to reset your password.');
       return;
     }
 
-    setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      setIsLoading(true);
+      await resetPassword(email);
       setIsSubmitted(true);
-    }, 2000);
+    } catch (error: any) {
+      const calmMessage = getCalmErrorMessage(error);
+      showSuccessAlert('Reset Password', calmMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleTryAgain = () => {
@@ -51,12 +61,7 @@ const ForgotPasswordScreen = () => {
   if (isSubmitted) {
     return (
       <View style={styles.container}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={24} color={PrimaryBrand} />
-        </TouchableOpacity>
+          <BackButton onPress={navigateToLogin} />
 
         <View style={styles.successContainer}>
           <View style={styles.successIcon}>
@@ -87,14 +92,9 @@ const ForgotPasswordScreen = () => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView contentContainerStyle={[styles.scrollContainer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
         {/* Animated Back Button */}
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={24} color={PrimaryBrand} />
-        </TouchableOpacity>
+          <BackButton onPress={navigateToLogin} />
 
         <View style={styles.header}>
           <View style={styles.iconContainer}>
@@ -161,23 +161,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     padding: 20,
-  },
-  backButton: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 20,
-    left: 20,
-    zIndex: 1,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   header: {
     alignItems: 'center',

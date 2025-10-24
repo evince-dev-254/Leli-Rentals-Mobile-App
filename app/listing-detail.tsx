@@ -1,25 +1,26 @@
-import React, { useState } from 'react';
+import BackButton from '@/components/BackButton';
 import {
-  View,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  Image,
-  ScrollView,
-  TextInput,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { 
-  PrimaryBrand, 
-  Background, 
-  WhiteBackground, 
-  InputBackground, 
-  PrimaryText, 
-  SecondaryText, 
-  Border,
-  Success
+    Background,
+    Border,
+    InputBackground,
+    PrimaryBrand,
+    PrimaryText,
+    SecondaryText,
+    Success,
+    WhiteBackground
 } from '@/constants/Colors';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import {
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 const ListingDetailScreen = () => {
   const [selectedDates, setSelectedDates] = useState({ start: '', end: '' });
@@ -100,12 +101,7 @@ const ListingDetailScreen = () => {
   return (
     <View style={styles.container}>
       {/* Animated Back Button */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => router.back()}
-      >
-        <Ionicons name="arrow-back" size={24} color={PrimaryBrand} />
-      </TouchableOpacity>
+      <BackButton onPress={() => router.back()} />
 
       <ScrollView style={styles.scrollView}>
         {/* Image Gallery */}
@@ -149,7 +145,7 @@ const ListingDetailScreen = () => {
                   placeholder="Select start date"
                   placeholderTextColor={SecondaryText}
                   value={selectedDates.start}
-                  onChangeText={(text) => setSelectedDates(prev => ({ ...prev, start: text }))}
+                  onChangeText={(text: string) => setSelectedDates((prev: any) => ({ ...prev, start: text }))}
                 />
               </View>
               <View style={styles.dateInput}>
@@ -159,7 +155,7 @@ const ListingDetailScreen = () => {
                   placeholder="Select end date"
                   placeholderTextColor={SecondaryText}
                   value={selectedDates.end}
-                  onChangeText={(text) => setSelectedDates(prev => ({ ...prev, end: text }))}
+                  onChangeText={(text: string) => setSelectedDates((prev: any) => ({ ...prev, end: text }))}
                 />
               </View>
             </View>
@@ -178,7 +174,7 @@ const ListingDetailScreen = () => {
             </View>
             <TouchableOpacity 
               style={styles.bookButton}
-              onPress={() => router.push('/booking-calendar')}
+              onPress={() => router.push('/payment-completion')}
             >
               <Text style={styles.bookButtonText}>Book Now</Text>
             </TouchableOpacity>
@@ -276,23 +272,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Background,
-  },
-  backButton: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    zIndex: 10,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   scrollView: {
     flex: 1,

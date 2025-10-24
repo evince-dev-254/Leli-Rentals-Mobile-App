@@ -1,93 +1,182 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  Image,
-  ScrollView,
-  TextInput,
-  Alert,
-  Switch,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import BackButton from '@/components/BackButton';
 import { useAccount } from '@/contexts/AccountContext';
-import { 
-  PrimaryBrand, 
-  Background, 
-  WhiteBackground, 
-  PrimaryText, 
-  SecondaryText, 
-  Border,
-  Success,
-  Error
+import { useAuth } from '@/contexts/AuthContext';
+import { ImagePickerService } from '@/services/ImagePickerService';
+import { showConfirmationAlert, showErrorAlert, showSuccessAlert } from '@/utils/alertUtils';
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import {
+    ScrollView,
+    Switch,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+
+import {
+    Background,
+    Border,
+    Error,
+    PrimaryBrand,
+    PrimaryText,
+    SecondaryText,
+    Success,
+    WhiteBackground
 } from '@/constants/Colors';
+
+// Web-compatible StyleSheet
+const StyleSheet = {
+  create: (styles: any) => styles
+};
+
+// Use React Native Alert instead of web-compatible version
 
 const ProfileScreen = () => {
   const { accountType } = useAccount();
+  const { logout, userProfile, updateUserProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [notifications, setNotifications] = useState(true);
-  const [emailUpdates, setEmailUpdates] = useState(true);
-  const [profileImage, setProfileImage] = useState('https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop');
+  const [loading, setLoading] = useState(false);
   
+  // Initialize with user profile data or defaults
   const [profileData, setProfileData] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 (555) 123-4567',
-    location: 'San Francisco, CA',
-    bio: 'Passionate about sharing quality items with the community. Always looking for unique finds!',
+    name: userProfile?.displayName || 'User',
+    email: userProfile?.email || '',
+    phone: userProfile?.phone || '',
+    location: userProfile?.location || '',
+    bio: userProfile?.bio || '',
     accountType: accountType === 'owner' ? 'Owner' : 'Renter',
-    joinDate: 'January 2024',
-    rating: 4.8,
-    totalRentals: 24,
-    totalEarnings: '$1,250',
+    joinDate: userProfile?.joinDate || 'January 2024',
+    rating: userProfile?.rating || 0,
+    totalRentals: userProfile?.totalRentals || 0,
+    totalEarnings: userProfile?.totalEarnings || '$0',
   });
 
-  // Update profile data when account type changes
+  const [profileImage, setProfileImage] = useState(
+    userProfile?.profileImageUrl || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop'
+  );
+
+  const [notifications, setNotifications] = useState(userProfile?.preferences?.notifications ?? true);
+  const [emailUpdates, setEmailUpdates] = useState(userProfile?.preferences?.emailUpdates ?? true);
+
+  // Update profile data when userProfile or account type changes
   useEffect(() => {
-    setProfileData(prev => ({
-      ...prev,
-      accountType: accountType === 'owner' ? 'Owner' : 'Renter'
-    }));
-  }, [accountType]);
+    if (userProfile) {
+      setProfileData({
+        name: userProfile.displayName,
+        email: userProfile.email,
+        phone: userProfile.phone || '',
+        location: userProfile.location || '',
+        bio: userProfile.bio || '',
+        accountType: accountType === 'owner' ? 'Owner' : 'Renter',
+        joinDate: userProfile.joinDate,
+        rating: userProfile.rating || 0,
+        totalRentals: userProfile.totalRentals || 0,
+        totalEarnings: userProfile.totalEarnings || '$0',
+      });
+      
+      if (userProfile.profileImageUrl) {
+        setProfileImage(userProfile.profileImageUrl);
+      }
+      
+      setNotifications(userProfile.preferences?.notifications ?? true);
+      setEmailUpdates(userProfile.preferences?.emailUpdates ?? true);
+    }
+  }, [userProfile, accountType]);
 
   const [editData, setEditData] = useState(profileData);
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      await updateUserProfile({
+        displayName: editData.name,
+        phone: editData.phone,
+        location: editData.location,
+        bio: editData.bio,
+      });
     setProfileData(editData);
     setIsEditing(false);
-    Alert.alert('Success', 'Profile updated successfully!');
+    showSuccessAlert('Success', 'Profile updated successfully!');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      showErrorAlert('Error', 'Failed to update profile. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
-
 
   const handleCancel = () => {
     setEditData(profileData);
     setIsEditing(false);
   };
 
-  const handleImageChange = () => {
-    Alert.alert(
-      'Change Profile Picture',
-      'Choose an option to update your profile picture',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Take Photo', 
-          onPress: () => {
-            // In a real app, this would open the camera
-            Alert.alert('Camera', 'Camera functionality would be implemented here');
-          }
-        },
-        { 
-          text: 'Choose from Gallery', 
-          onPress: () => {
-            // In a real app, this would open the image picker
-            Alert.alert('Gallery', 'Image picker functionality would be implemented here');
-          }
+  const handleLogout = async () => {
+    showConfirmationAlert(
+      'Logout',
+      'Are you sure you want to logout?',
+      async () => {
+        try {
+          await logout();
+          router.push('/login');
+        } catch {
+          showErrorAlert('Error', 'Failed to logout. Please try again.');
         }
-      ]
+      }
     );
+  };
+
+  const handleImageChange = async () => {
+    try {
+      setLoading(true);
+      const imageResult = await ImagePickerService.showImagePickerOptions();
+      
+      if (imageResult) {
+        // Validate image
+        const validation = ImagePickerService.validateImage(imageResult);
+        if (!validation.isValid) {
+          showErrorAlert('Invalid Image', validation.error);
+          return;
+        }
+        
+        // Upload image
+        const imageUrl = await ImagePickerService.uploadImage(imageResult);
+        
+        // Update profile with new image
+        await updateUserProfile({ profileImageUrl: imageUrl });
+        setProfileImage(imageUrl);
+        
+        showSuccessAlert('Success', 'Profile picture updated successfully!');
+      }
+    } catch (error) {
+      console.error('Error updating profile picture:', error);
+      showErrorAlert('Error', 'Failed to update profile picture. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePreferenceChange = async (key: 'notifications' | 'emailUpdates', value: boolean) => {
+    try {
+      await updateUserProfile({
+        preferences: {
+          notifications: userProfile?.preferences?.notifications ?? true,
+          emailUpdates: userProfile?.preferences?.emailUpdates ?? true,
+          [key]: value,
+        },
+      });
+      
+      if (key === 'notifications') {
+        setNotifications(value);
+      } else {
+        setEmailUpdates(value);
+      }
+    } catch (error) {
+      console.error('Error updating preferences:', error);
+      showErrorAlert('Error', 'Failed to update preferences. Please try again.');
+    }
   };
 
   const stats = [
@@ -100,23 +189,19 @@ const ProfileScreen = () => {
   const menuItems = [
     { title: 'Edit Profile', icon: 'person' as const, onPress: () => setIsEditing(true) },
     { title: 'Billing & Payments', icon: 'card' as const, onPress: () => router.push('/billing') },
-    { title: 'My Listings', icon: 'list' as const, onPress: () => router.push('/my-listings') },
+    { title: 'My Listings', icon: 'list' as const, onPress: () => router.push(accountType === 'owner' ? '/owner-listings' : '/my-listings') },
     { title: 'My Bookings', icon: 'calendar' as const, onPress: () => router.push('/my-bookings') },
     { title: 'Favorites', icon: 'heart' as const, onPress: () => router.push('/favorites') },
     { title: 'Reviews', icon: 'star' as const, onPress: () => router.push('/reviews') },
     { title: 'Settings', icon: 'settings' as const, onPress: () => router.push('/settings') },
     { title: 'Help & Support', icon: 'help-circle' as const, onPress: () => router.push('/help') },
+    { title: 'Logout', icon: 'log-out' as const, onPress: handleLogout, isDestructive: true },
   ];
 
   return (
     <View style={styles.container}>
       {/* Animated Back Button */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => router.push('/(tabs)')}
-      >
-        <Ionicons name="arrow-back" size={24} color={PrimaryBrand} />
-      </TouchableOpacity>
+      <BackButton onPress={() => router.push('/(tabs)')} />
 
       <ScrollView style={styles.scrollView}>
         {/* Profile Header */}
@@ -169,7 +254,7 @@ const ProfileScreen = () => {
                 <TextInput
                   style={styles.input}
                   value={editData.name}
-                  onChangeText={(text) => setEditData({...editData, name: text})}
+                  onChangeText={(text: string) => setEditData({...editData, name: text})}
                   placeholder="Enter your full name"
                 />
               </View>
@@ -179,7 +264,7 @@ const ProfileScreen = () => {
                 <TextInput
                   style={styles.input}
                   value={editData.email}
-                  onChangeText={(text) => setEditData({...editData, email: text})}
+                  onChangeText={(text: string) => setEditData({...editData, email: text})}
                   placeholder="Enter your email"
                   keyboardType="email-address"
                 />
@@ -190,7 +275,7 @@ const ProfileScreen = () => {
                 <TextInput
                   style={styles.input}
                   value={editData.phone}
-                  onChangeText={(text) => setEditData({...editData, phone: text})}
+                  onChangeText={(text: string) => setEditData({...editData, phone: text})}
                   placeholder="Enter your phone number"
                   keyboardType="phone-pad"
                 />
@@ -201,7 +286,7 @@ const ProfileScreen = () => {
                 <TextInput
                   style={styles.input}
                   value={editData.location}
-                  onChangeText={(text) => setEditData({...editData, location: text})}
+                  onChangeText={(text: string) => setEditData({...editData, location: text})}
                   placeholder="Enter your location"
                 />
               </View>
@@ -211,7 +296,7 @@ const ProfileScreen = () => {
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   value={editData.bio}
-                  onChangeText={(text) => setEditData({...editData, bio: text})}
+                  onChangeText={(text: string) => setEditData({...editData, bio: text})}
                   placeholder="Tell us about yourself"
                   multiline
                   numberOfLines={3}
@@ -222,8 +307,14 @@ const ProfileScreen = () => {
                 <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                <TouchableOpacity 
+                  style={[styles.saveButton, loading && styles.saveButtonDisabled]} 
+                  onPress={handleSave}
+                  disabled={loading}
+                >
+                  <Text style={styles.saveButtonText}>
+                    {loading ? 'Saving...' : 'Save Changes'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -272,7 +363,7 @@ const ProfileScreen = () => {
             </View>
             <Switch
               value={notifications}
-              onValueChange={setNotifications}
+              onValueChange={(value) => handlePreferenceChange('notifications', value)}
               trackColor={{ false: '#e5e7eb', true: PrimaryBrand + '40' }}
               thumbColor={notifications ? PrimaryBrand : '#ffffff'}
             />
@@ -285,7 +376,7 @@ const ProfileScreen = () => {
             </View>
             <Switch
               value={emailUpdates}
-              onValueChange={setEmailUpdates}
+              onValueChange={(value) => handlePreferenceChange('emailUpdates', value)}
               trackColor={{ false: '#e5e7eb', true: PrimaryBrand + '40' }}
               thumbColor={emailUpdates ? PrimaryBrand : '#ffffff'}
             />
@@ -299,8 +390,17 @@ const ProfileScreen = () => {
           {menuItems.map((item, index) => (
             <TouchableOpacity key={index} style={styles.menuItem} onPress={item.onPress}>
               <View style={styles.menuItemLeft}>
-                <Ionicons name={item.icon} size={20} color={SecondaryText} />
-                <Text style={styles.menuItemText}>{item.title}</Text>
+                <Ionicons 
+                  name={item.icon} 
+                  size={20} 
+                  color={item.isDestructive ? Error : SecondaryText} 
+                />
+                <Text style={[
+                  styles.menuItemText,
+                  item.isDestructive && styles.destructiveText
+                ]}>
+                  {item.title}
+                </Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={SecondaryText} />
             </TouchableOpacity>
@@ -316,23 +416,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Background,
-  },
-  backButton: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    zIndex: 10,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   scrollView: {
     flex: 1,
@@ -507,6 +590,9 @@ const styles = StyleSheet.create({
     color: WhiteBackground,
     fontWeight: 'bold',
   },
+  saveButtonDisabled: {
+    opacity: 0.6,
+  },
   profileDetails: {
     gap: 12,
   },
@@ -571,6 +657,9 @@ const styles = StyleSheet.create({
   menuItemText: {
     fontSize: 16,
     color: PrimaryText,
+  },
+  destructiveText: {
+    color: Error,
   },
 });
 

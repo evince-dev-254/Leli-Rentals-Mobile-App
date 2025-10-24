@@ -1,39 +1,52 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView, 
-  Text, 
-  Image,
-  Animated
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/contexts/ThemeContext';
 import ThemeAwareLogo from '@/components/ThemeAwareLogo';
-import { 
-  PrimaryBrand, 
-  Background, 
-  WhiteBackground, 
-  PrimaryText, 
-  SecondaryText, 
-  Border,
-  DarkBackground,
-  DarkCard,
-  DarkText,
-  DarkSecondaryText,
-  DarkBorder,
-  VibrantPurple,
-  VibrantOrange,
-  VibrantPink,
-  VibrantGreen,
-  VibrantRed,
-  VibrantCyan
+import {
+    Background,
+    Border,
+    DarkBackground,
+    DarkCard,
+    DarkSecondaryText,
+    DarkText,
+    PrimaryBrand,
+    PrimaryText,
+    SecondaryText,
+    VibrantGreen,
+    VibrantOrange,
+    VibrantPurple,
+    VibrantRed,
+    WhiteBackground
 } from '@/constants/Colors';
+import { useAccount } from '@/contexts/AccountContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import React, { useState } from 'react';
+import {
+    Alert,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
 
 export default function MyListingsScreen() {
   const { isDark } = useTheme();
+  const { accountType } = useAccount();
+
+  // Redirect owners to the dedicated owner listings page
+  React.useEffect(() => {
+    if (accountType === 'owner') {
+      router.replace('/owner-listings');
+      return;
+    }
+  }, [accountType]);
+
+  // Don't render anything for owners since we redirect them
+  if (accountType === 'owner') {
+    return null;
+  }
+  // Owner listings data
   const [listings, setListings] = useState([
     {
       id: 1,
@@ -73,6 +86,52 @@ export default function MyListingsScreen() {
     }
   ]);
 
+  // Renter rental data
+  const [rentals, setRentals] = useState([
+    {
+      id: 1,
+      title: 'Professional Camera Kit',
+      price: 'KSh 5,500/day',
+      image: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=400&h=300&fit=crop',
+      rating: 4.9,
+      status: 'active',
+      startDate: '2024-01-15',
+      endDate: '2024-01-17',
+      totalCost: 'KSh 11,000',
+      owner: 'John Doe',
+      category: 'Electronics',
+      color: VibrantOrange
+    },
+    {
+      id: 2,
+      title: 'Mountain Bike',
+      price: 'KSh 4,500/day',
+      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop',
+      rating: 4.8,
+      status: 'completed',
+      startDate: '2024-01-10',
+      endDate: '2024-01-12',
+      totalCost: 'KSh 9,000',
+      owner: 'Jane Smith',
+      category: 'Sports',
+      color: VibrantGreen
+    },
+    {
+      id: 3,
+      title: 'Power Drill Set',
+      price: 'KSh 2,500/day',
+      image: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400&h=300&fit=crop',
+      rating: 4.7,
+      status: 'upcoming',
+      startDate: '2024-01-20',
+      endDate: '2024-01-22',
+      totalCost: 'KSh 5,000',
+      owner: 'Mike Johnson',
+      category: 'Tools',
+      color: VibrantPurple
+    },
+  ]);
+
   const toggleListingStatus = (id: number) => {
     setListings(prev => prev.map(listing => 
       listing.id === id 
@@ -98,15 +157,17 @@ export default function MyListingsScreen() {
       {/* Title */}
       <View style={styles.titleContainer}>
         <Text style={[styles.title, { color: isDark ? DarkText : PrimaryText }]}>
-          My Listings
+          {accountType === 'owner' ? 'My Listings' : 'My Rentals'}
         </Text>
         <Text style={[styles.subtitle, { color: isDark ? DarkSecondaryText : SecondaryText }]}>
-          Manage your rental items
+          {accountType === 'owner' ? 'Manage your rental items' : 'Items you are currently renting'}
         </Text>
       </View>
 
       {/* Stats */}
       <View style={styles.statsContainer}>
+        {accountType === 'owner' ? (
+          <>
         <View style={[styles.statCard, { backgroundColor: isDark ? DarkCard : WhiteBackground }]}>
           <Text style={[styles.statNumber, { color: VibrantGreen }]}>
             {listings.filter(l => l.status === 'active').length}
@@ -131,22 +192,54 @@ export default function MyListingsScreen() {
             Total Earnings
           </Text>
         </View>
+          </>
+        ) : (
+          <>
+            <View style={[styles.statCard, { backgroundColor: isDark ? DarkCard : WhiteBackground }]}>
+              <Text style={[styles.statNumber, { color: VibrantGreen }]}>
+                {rentals.filter(r => r.status === 'active').length}
+              </Text>
+              <Text style={[styles.statLabel, { color: isDark ? DarkSecondaryText : SecondaryText }]}>
+                Active Rentals
+              </Text>
+            </View>
+            <View style={[styles.statCard, { backgroundColor: isDark ? DarkCard : WhiteBackground }]}>
+              <Text style={[styles.statNumber, { color: VibrantOrange }]}>
+                {rentals.filter(r => r.status === 'completed').length}
+              </Text>
+              <Text style={[styles.statLabel, { color: isDark ? DarkSecondaryText : SecondaryText }]}>
+                Completed
+              </Text>
+            </View>
+            <View style={[styles.statCard, { backgroundColor: isDark ? DarkCard : WhiteBackground }]}>
+              <Text style={[styles.statNumber, { color: VibrantPurple }]}>
+                {rentals.reduce((sum, r) => sum + parseInt(r.totalCost.replace('KSh ', '').replace(',', '')), 0).toLocaleString()}
+              </Text>
+              <Text style={[styles.statLabel, { color: isDark ? DarkSecondaryText : SecondaryText }]}>
+                Total Spent
+              </Text>
+            </View>
+          </>
+        )}
       </View>
 
-      {/* Add New Button */}
+      {/* Add New Button - Only for owners */}
+      {accountType === 'owner' && (
       <View style={styles.addButtonContainer}>
         <TouchableOpacity 
           style={styles.addButton}
-          onPress={() => router.push('/owner-dashboard')}
+            onPress={() => router.push('/renter-listing')}
         >
           <Ionicons name="add" size={24} color={WhiteBackground} />
           <Text style={styles.addButtonText}>Add New Listing</Text>
         </TouchableOpacity>
       </View>
+      )}
 
-      {/* Listings */}
+      {/* Listings/Rentals */}
       <View style={styles.listingsContainer}>
-        {listings.map((listing) => (
+        {accountType === 'owner' ? (
+          listings.map((listing) => (
           <View 
             key={listing.id} 
             style={[styles.listingCard, { backgroundColor: isDark ? DarkCard : WhiteBackground }]}
@@ -218,7 +311,82 @@ export default function MyListingsScreen() {
               </View>
             </View>
           </View>
-        ))}
+        ))
+        ) : (
+          rentals.map((rental) => (
+            <View 
+              key={rental.id} 
+              style={[styles.listingCard, { backgroundColor: isDark ? DarkCard : WhiteBackground }]}
+            >
+              <Image source={{ uri: rental.image }} style={styles.listingImage} />
+              <View style={styles.listingInfo}>
+                <View style={styles.listingHeader}>
+                  <Text style={[styles.listingTitle, { color: isDark ? DarkText : PrimaryText }]}>
+                    {rental.title}
+                  </Text>
+                  <View style={[styles.statusBadge, { backgroundColor: rental.status === 'active' ? VibrantGreen + '20' : rental.status === 'completed' ? VibrantOrange + '20' : VibrantPurple + '20' }]}>
+                    <Text style={[styles.statusText, { color: rental.status === 'active' ? VibrantGreen : rental.status === 'completed' ? VibrantOrange : VibrantPurple }]}>
+                      {rental.status}
+                    </Text>
+                  </View>
+                </View>
+                
+                <Text style={[styles.listingPrice, { color: isDark ? DarkSecondaryText : SecondaryText }]}>
+                  {rental.price}
+                </Text>
+                
+                <View style={styles.rentalDetails}>
+                  <View style={styles.rentalDetailItem}>
+                    <Ionicons name="calendar" size={16} color={isDark ? DarkSecondaryText : SecondaryText} />
+                    <Text style={[styles.rentalDetailText, { color: isDark ? DarkSecondaryText : SecondaryText }]}>
+                      {rental.startDate} - {rental.endDate}
+                    </Text>
+                  </View>
+                  <View style={styles.rentalDetailItem}>
+                    <Ionicons name="person" size={16} color={isDark ? DarkSecondaryText : SecondaryText} />
+                    <Text style={[styles.rentalDetailText, { color: isDark ? DarkSecondaryText : SecondaryText }]}>
+                      Owner: {rental.owner}
+                    </Text>
+                  </View>
+                  <View style={styles.rentalDetailItem}>
+                    <Ionicons name="cash" size={16} color={isDark ? DarkSecondaryText : SecondaryText} />
+                    <Text style={[styles.rentalDetailText, { color: isDark ? DarkSecondaryText : SecondaryText }]}>
+                      Total: {rental.totalCost}
+                    </Text>
+                  </View>
+                </View>
+                
+                <View style={styles.ratingContainer}>
+                  <Ionicons name="star" size={16} color="#fbbf24" />
+                  <Text style={[styles.ratingText, { color: isDark ? DarkSecondaryText : SecondaryText }]}>
+                    {rental.rating}
+                  </Text>
+                </View>
+                
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity 
+                    style={[styles.actionButton, { backgroundColor: PrimaryBrand + '20' }]}
+                    onPress={() => router.push('/listing-detail')}
+                  >
+                    <Text style={[styles.actionButtonText, { color: PrimaryBrand }]}>
+                      View Details
+                    </Text>
+                  </TouchableOpacity>
+                  {rental.status === 'active' && (
+                    <TouchableOpacity 
+                      style={[styles.actionButton, { backgroundColor: VibrantRed + '20' }]}
+                      onPress={() => Alert.alert('Cancel Rental', 'Are you sure you want to cancel this rental?')}
+                    >
+                      <Text style={[styles.actionButtonText, { color: VibrantRed }]}>
+                        Cancel
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            </View>
+          ))
+        )}
       </View>
     </ScrollView>
   );
@@ -372,5 +540,27 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  rentalDetails: {
+    marginVertical: 8,
+    gap: 4,
+  },
+  rentalDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  rentalDetailText: {
+    fontSize: 12,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'capitalize',
   },
 });

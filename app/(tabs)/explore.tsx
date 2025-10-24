@@ -1,43 +1,44 @@
-import React, { useState } from 'react';
-import {
-  View,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  TextInput,
-  Image,
-  FlatList,
-  Dimensions,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/contexts/ThemeContext';
 import ThemeAwareLogo from '@/components/ThemeAwareLogo';
-import { 
-  PrimaryBrand, 
-  Background, 
-  WhiteBackground, 
-  PrimaryText, 
-  SecondaryText, 
-  Border,
-  VibrantOrange,
-  VibrantGreen,
-  VibrantPurple,
-  VibrantPink,
-  VibrantCyan,
-  VibrantBlue,
-  DarkText,
-  DarkCard,
-  DarkBorder,
-  DarkSecondaryText,
-  DarkBackground
+import {
+    Border,
+    DarkBackground,
+    DarkBorder,
+    DarkCard,
+    DarkSecondaryText,
+    DarkText,
+    PrimaryBrand,
+    PrimaryText,
+    SecondaryText,
+    VibrantBlue,
+    VibrantCyan,
+    VibrantGreen,
+    VibrantOrange,
+    VibrantPink,
+    VibrantPurple,
+    WhiteBackground
 } from '@/constants/Colors';
+import { useAccount } from '@/contexts/AccountContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import {
+    Dimensions,
+    FlatList,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 const { width } = Dimensions.get('window');
 
 const ExploreScreen = () => {
   const { isDark } = useTheme();
+  const { accountType } = useAccount();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('popular');
@@ -159,11 +160,17 @@ const ExploreScreen = () => {
     },
   ];
 
-  const quickActions = [
-    { title: 'My Listings', icon: 'list', color: VibrantGreen, route: '/my-listings' },
-    { title: 'Analytics', icon: 'analytics', color: VibrantPurple, route: '/dashboard' },
+  const quickActions = accountType === 'owner' ? [
+    { title: 'My Listings', icon: 'list', color: VibrantGreen, route: '/owner-listings' },
+    { title: 'Analytics', icon: 'analytics', color: VibrantPurple, route: '/admin/analytics' },
     { title: 'Bookings', icon: 'calendar', color: VibrantBlue, route: '/my-bookings' },
     { title: 'Reviews', icon: 'star', color: VibrantOrange, route: '/reviews' },
+  ] : [
+    { title: 'My Bookings', icon: 'calendar', color: VibrantBlue, route: '/my-bookings' },
+    { title: 'Favorites', icon: 'heart', color: VibrantPink, route: '/favorites' },
+    { title: 'Reviews', icon: 'star', color: VibrantOrange, route: '/reviews' },
+    { title: 'Become an Owner', icon: 'trending-up', color: VibrantGreen, route: '/owner-preview' },
+    { title: 'Help', icon: 'help-circle', color: VibrantCyan, route: '/help' },
   ];
 
   const filteredItems = selectedCategory === 'all' 

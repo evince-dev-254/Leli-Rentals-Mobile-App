@@ -1,43 +1,44 @@
-import React, { useState } from 'react';
+import BackButton from '@/components/BackButton';
 import {
-  View,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  Switch,
-  TextInput,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { 
-  PrimaryBrand, 
-  Background, 
-  WhiteBackground, 
-  PrimaryText, 
-  SecondaryText, 
-  Border,
-  Success,
-  Error,
-  Warning,
-  DarkBackground,
-  DarkCard,
-  DarkForeground,
-  DarkMutedText,
-  DarkBorder,
-  DarkText,
-  DarkSecondaryText,
-  VibrantGreen,
-  VibrantOrange,
-  VibrantRed
+    Background,
+    Border,
+    DarkBackground,
+    DarkBorder,
+    DarkCard,
+    DarkForeground,
+    DarkMutedText,
+    DarkSecondaryText,
+    DarkText,
+    Error,
+    PrimaryBrand,
+    PrimaryText,
+    SecondaryText,
+    VibrantGreen,
+    VibrantOrange,
+    VibrantRed,
+    WhiteBackground
 } from '@/constants/Colors';
-import { useTheme } from '@/contexts/ThemeContext';
 import { useAccount } from '@/contexts/AccountContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import { showConfirmationAlert, showErrorAlert, showSuccessAlert } from '@/utils/alertUtils';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import {
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 const SettingsScreen = () => {
   const { theme, themeMode, setThemeMode, isDark } = useTheme();
-  const { accountType, verificationStatus, isOwnerVerified, switchToOwner, switchToRenter, logout } = useAccount();
+  const { accountType, verificationStatus, isOwnerVerified, switchToOwner, switchToRenter } = useAccount();
+  const { logout } = useAuth();
   const [notifications, setNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
@@ -54,75 +55,82 @@ const SettingsScreen = () => {
 
   const handleSwitchToOwner = () => {
     if (verificationStatus === 'not_started') {
-      Alert.alert(
+      showConfirmationAlert(
         'Owner Verification Required',
-        'To become an owner, you need to complete the verification process. This includes ID verification and choosing a payment plan.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Start Verification', 
-            onPress: () => {
-              setShowAccountTypeModal(false);
-              router.push('/owner-verification');
-            }
+        'To become an owner, you need to complete ID verification within 2 days of account creation. This includes uploading your ID card or passport for verification.',
+        async () => {
+          try {
+            await switchToOwner();
+            setShowAccountTypeModal(false);
+            showSuccessAlert('Success', 'Switched to owner account! Please complete verification to access all owner features.');
+          } catch (error) {
+            showErrorAlert('Error', 'Failed to switch to owner account');
+            console.error('Switch to owner error:', error);
           }
-        ]
+        }
       );
     } else if (verificationStatus === 'pending') {
-      Alert.alert(
+      showConfirmationAlert(
         'Verification Pending',
-        'Your owner verification is currently under review. You will be notified once it\'s approved.',
-        [{ text: 'OK' }]
+        'Your owner verification is currently under review. You can still switch to owner account, but some features may be limited until verification is complete.',
+        async () => {
+          try {
+            await switchToOwner();
+            setShowAccountTypeModal(false);
+            showSuccessAlert('Success', 'Switched to owner account! Your verification is still pending.');
+          } catch (error) {
+            showErrorAlert('Error', 'Failed to switch to owner account');
+            console.error('Switch to owner error:', error);
+          }
+        }
       );
     } else if (verificationStatus === 'rejected') {
-      Alert.alert(
+      showConfirmationAlert(
         'Verification Rejected',
-        'Your previous verification was rejected. You can reapply with updated information.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Reapply', 
-            onPress: () => {
-              setShowAccountTypeModal(false);
-              router.push('/owner-verification');
-            }
+        'Your previous verification was rejected. You can still switch to owner account, but you\'ll need to reapply for verification.',
+        async () => {
+          try {
+            await switchToOwner();
+            setShowAccountTypeModal(false);
+            showSuccessAlert('Success', 'Switched to owner account! Please reapply for verification.');
+          } catch (error) {
+            showErrorAlert('Error', 'Failed to switch to owner account');
+            console.error('Switch to owner error:', error);
           }
-        ]
+        }
       );
     } else if (verificationStatus === 'verified') {
-      Alert.alert(
+      showConfirmationAlert(
         'Switch to Owner Account',
         'You are verified as an owner. Switch to owner account to access owner features?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Switch', 
-            onPress: () => {
-              switchToOwner();
-              setShowAccountTypeModal(false);
-              Alert.alert('Success', 'Switched to owner account successfully!');
-            }
+        async () => {
+          try {
+            await switchToOwner();
+            setShowAccountTypeModal(false);
+            showSuccessAlert('Success', 'Switched to owner account successfully!');
+          } catch (error) {
+            showErrorAlert('Error', 'Failed to switch to owner account');
+            console.error('Switch to owner error:', error);
           }
-        ]
+        }
       );
     }
   };
 
   const handleSwitchToRenter = () => {
-    Alert.alert(
+    showConfirmationAlert(
       'Switch to Renter Account',
       'Switch to renter account to access renter features?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Switch', 
-          onPress: () => {
-            switchToRenter();
-            setShowAccountTypeModal(false);
-            Alert.alert('Success', 'Switched to renter account successfully!');
-          }
+      async () => {
+        try {
+          await switchToRenter();
+          setShowAccountTypeModal(false);
+          showSuccessAlert('Success', 'Switched to renter account successfully!');
+        } catch (error) {
+          showErrorAlert('Error', 'Failed to switch to renter account');
+          console.error('Switch to renter error:', error);
         }
-      ]
+      }
     );
   };
 
@@ -180,7 +188,7 @@ const SettingsScreen = () => {
     {
       title: 'Data & Privacy',
       icon: 'eye-outline',
-      onPress: () => Alert.alert('Data & Privacy', 'Manage your data preferences'),
+      onPress: () => showSuccessAlert('Data & Privacy', 'Manage your data preferences'),
       showArrow: true,
     },
   ];
@@ -201,26 +209,26 @@ const SettingsScreen = () => {
     {
       title: 'Report a Problem',
       icon: 'flag-outline',
-      onPress: () => Alert.alert('Report Problem', 'Report a technical issue'),
+      onPress: () => showSuccessAlert('Report Problem', 'Report a technical issue'),
       showArrow: true,
     },
   ];
 
   const handleChangePassword = () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+      showErrorAlert('Error', 'Please fill in all fields');
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'New passwords do not match');
+      showErrorAlert('Error', 'New passwords do not match');
       return;
     }
     if (newPassword.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      showErrorAlert('Error', 'Password must be at least 6 characters');
       return;
     }
     
-    Alert.alert('Success', 'Password changed successfully');
+    showSuccessAlert('Success', 'Password changed successfully');
     setShowChangePassword(false);
     setCurrentPassword('');
     setNewPassword('');
@@ -228,40 +236,47 @@ const SettingsScreen = () => {
   };
 
   const handleLogout = async () => {
-    Alert.alert(
+    showConfirmationAlert(
       'Sign Out',
       'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Sign Out', 
-          style: 'destructive', 
-          onPress: async () => {
-            try {
-              // Use the logout function from AccountContext
-              await logout();
-              
-              // Navigate to account type selection
-              router.replace('/account-type');
-            } catch (error) {
-              console.error('Error during logout:', error);
-              // Still navigate to account type selection even if logout fails
-              router.replace('/account-type');
-            }
-          }
+      async () => {
+        try {
+          // Use the logout function from AccountContext
+          await logout();
+          
+          // Navigate to login page
+          router.push('/login');
+        } catch (error) {
+          console.error('Error during logout:', error);
+          // Still navigate to login page even if logout fails
+          router.push('/login');
         }
-      ]
+      }
     );
   };
 
-  const handleDeleteAccount = () => {
-    Alert.alert(
+  const handleDeleteAccount = async () => {
+    showConfirmationAlert(
       'Delete Account',
       'This action cannot be undone. Are you sure you want to delete your account?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => Alert.alert('Account Deleted', 'Your account has been deleted') }
-      ]
+      async () => {
+        try {
+          // Delete user from Firebase Auth
+          const { deleteUser } = await import('firebase/auth');
+          const { auth } = await import('@/config/firebase');
+          const { UserDataService } = await import('@/services/UserDataService');
+          
+          if (auth.currentUser) {
+            await deleteUser(auth.currentUser);
+            await UserDataService.clearUserData();
+            showSuccessAlert('Account Deleted', 'Your account has been permanently deleted');
+            router.push('/signup');
+          }
+        } catch (error) {
+          console.error('Error deleting account:', error);
+          showErrorAlert('Error', 'Failed to delete account. Please try again.');
+        }
+      }
     );
   };
 
@@ -312,12 +327,7 @@ const SettingsScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: isDark ? DarkBackground : Background }]}>
       {/* Animated Back Button */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => router.push('/(tabs)')}
-      >
-        <Ionicons name="arrow-back" size={24} color={PrimaryBrand} />
-      </TouchableOpacity>
+      <BackButton onPress={() => router.push('/(tabs)')} />
 
       <ScrollView style={styles.scrollView}>
         {/* Header */}
@@ -699,23 +709,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Background,
-  },
-  backButton: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    zIndex: 10,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   scrollView: {
     flex: 1,
