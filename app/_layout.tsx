@@ -1,59 +1,43 @@
+import { ClerkProvider } from '@clerk/clerk-expo';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import '../global.css';
 
+import { clerkConfig } from '@/config/clerk';
 import { AccountProvider } from '@/contexts/AccountContext';
-import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 
 export const unstable_settings = {
-  anchor: '(tabs)',
+  anchor: 'index',
 };
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <AccountProvider>
-        <Stack>
-          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-          <Stack.Screen name="login" options={{ headerShown: false }} />
-          <Stack.Screen name="signup" options={{ headerShown: false }} />
-          <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
-          <Stack.Screen name="account-type" options={{ headerShown: false }} />
-          <Stack.Screen name="owner-verification" options={{ headerShown: false }} />
-          <Stack.Screen name="renter-listing" options={{ headerShown: false }} />
-          <Stack.Screen name="owner-dashboard" options={{ headerShown: false }} />
-          <Stack.Screen name="categories" options={{ headerShown: false }} />
-          <Stack.Screen name="about" options={{ headerShown: false }} />
-          <Stack.Screen name="contact" options={{ headerShown: false }} />
-          <Stack.Screen name="help" options={{ headerShown: false }} />
-          <Stack.Screen name="terms" options={{ headerShown: false }} />
-          <Stack.Screen name="privacy" options={{ headerShown: false }} />
-          <Stack.Screen name="listing-detail" options={{ headerShown: false }} />
-          <Stack.Screen name="admin/analytics" options={{ headerShown: false }} />
-          <Stack.Screen name="test-integration" options={{ headerShown: false }} />
-          <Stack.Screen name="test-database" options={{ headerShown: false }} />
-          <Stack.Screen name="billing" options={{ headerShown: false }} />
-          <Stack.Screen name="my-listings" options={{ headerShown: false }} />
-          <Stack.Screen name="owner-listings" options={{ headerShown: false }} />
-          <Stack.Screen name="create-listing" options={{ headerShown: false }} />
-          <Stack.Screen name="payment-completion" options={{ headerShown: false }} />
-          <Stack.Screen name="my-bookings" options={{ headerShown: false }} />
-          <Stack.Screen name="favorites" options={{ headerShown: false }} />
-          <Stack.Screen name="reviews" options={{ headerShown: false }} />
-          <Stack.Screen name="settings" options={{ headerShown: false }} />
-          <Stack.Screen name="booking-calendar" options={{ headerShown: false }} />
-          <Stack.Screen name="contact-owner" options={{ headerShown: false }} />
-          <Stack.Screen name="owner-preview" options={{ headerShown: false }} />
-          <Stack.Screen name="write-review" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+    <SafeAreaProvider>
+      <ClerkProvider 
+        publishableKey={clerkConfig.publishableKey}
+      >
+        <ThemeProvider>
+          <AccountProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="onboarding" />
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(renter)" />
+          <Stack.Screen name="(owner)" />
+          <Stack.Screen name="(shared)" />
+          <Stack.Screen name="account-type" />
+          <Stack.Screen name="google-name-collection" />
+          <Stack.Screen name="admin/analytics" />
+          <Stack.Screen name="debug-clear-data" />
+          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
         </Stack>
         <StatusBar style="auto" />
-        </AccountProvider>
-      </ThemeProvider>
-    </AuthProvider>
+          </AccountProvider>
+        </ThemeProvider>
+      </ClerkProvider>
+    </SafeAreaProvider>
   );
 }

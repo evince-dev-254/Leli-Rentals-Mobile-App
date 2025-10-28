@@ -1,22 +1,31 @@
-import React from 'react';
-import { StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Text, TouchableOpacity } from 'react-native';
 
 interface BackButtonProps {
-  onPress: () => void;
+  onPress?: () => void;
   text?: string;
+  style?: any;
+  textStyle?: any;
 }
 
-const BackButton: React.FC<BackButtonProps> = ({ onPress, text = '← Back' }) => {
-  return (
-    <TouchableOpacity style={styles.backButton} onPress={onPress}>
-      <Text style={styles.backButtonText}>{text}</Text>
-    </TouchableOpacity>
-  );
-};
+export default function BackButton({ 
+  onPress, 
+  text = '← Back', 
+  style, 
+  textStyle 
+}: BackButtonProps) {
+  const router = useRouter();
 
-const styles = StyleSheet.create({
-  backButton: {
-    position: 'absolute',
+  const handlePress = () => {
+    if (onPress) {
+      onPress();
+    } else {
+      router.back();
+    }
+  };
+
+  const defaultStyle = {
+    position: 'absolute' as const,
     top: 50,
     left: 20,
     zIndex: 10,
@@ -26,12 +35,21 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderWidth: 1,
     borderColor: '#e5e7eb',
-  },
-  backButtonText: {
+  };
+
+  const defaultTextStyle = {
     fontSize: 16,
     color: '#d97706',
-    fontWeight: '600',
-  },
-});
+    fontWeight: '600' as const,
+  };
 
-export default BackButton;
+  return (
+    <TouchableOpacity 
+      style={[defaultStyle, style]} 
+      onPress={handlePress}
+      activeOpacity={0.8}
+    >
+      <Text style={[defaultTextStyle, textStyle]}>{text}</Text>
+    </TouchableOpacity>
+  );
+}

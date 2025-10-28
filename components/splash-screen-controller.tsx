@@ -1,12 +1,12 @@
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@clerk/clerk-expo'
 import { SplashScreen } from 'expo-router'
 
 SplashScreen.preventAutoHideAsync()
 
 export function SplashScreenController() {
-  const { loading } = useAuth()
+  const { isLoaded } = useAuth()
 
-  if (!loading) {
+  if (isLoaded) {
     SplashScreen.hideAsync()
   }
 

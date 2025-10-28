@@ -1,575 +1,334 @@
-import { db, storage } from '@/config/firebase';
+// Mock data storage - in a real app, this would be replaced with your backend API
 import {
-    Booking,
-    COLLECTIONS,
-    Favorite,
-    IDVerification,
-    Listing,
-    Notification,
-    Review,
-    UserProfile,
+  Booking,
+  COLLECTIONS,
+  Favorite,
+  IDVerification,
+  Listing,
+  Notification,
+  Review,
+  UserProfile,
 } from '@/types/FirebaseTypes';
-import {
-    addDoc,
-    collection,
-    deleteDoc,
-    doc,
-    getDoc,
-    getDocs,
-    limit,
-    orderBy,
-    query,
-    serverTimestamp,
-    setDoc,
-    updateDoc,
-    where
-} from 'firebase/firestore';
-import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+
+// Mock data storage
+const mockData = {
+  users: new Map<string, UserProfile>(),
+  listings: new Map<string, Listing>(),
+  bookings: new Map<string, Booking>(),
+  payments: new Map<string, any>(),
+  notifications: new Map<string, Notification>(),
+  reviews: new Map<string, Review>(),
+  favorites: new Map<string, Favorite>(),
+  idVerifications: new Map<string, IDVerification>(),
+};
+
+// Helper function to generate IDs
+const generateId = () => `mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+// Helper function to simulate async delay
+const delay = (ms: number = 100) => new Promise(resolve => setTimeout(resolve, ms));
 
 export class FirebaseService {
   // ===== USER PROFILE OPERATIONS =====
   
   static async createUserProfile(profile: UserProfile): Promise<void> {
-    const userRef = doc(db, COLLECTIONS.USERS, profile.uid);
-    await setDoc(userRef, {
-      ...profile,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-  }
-
-  static async updateUserProfile(uid: string, updates: Partial<UserProfile>): Promise<void> {
-    const userRef = doc(db, COLLECTIONS.USERS, uid);
-    await updateDoc(userRef, {
-      ...updates,
-      updatedAt: serverTimestamp(),
-    });
+    await delay();
+    mockData.users.set(profile.uid, profile);
   }
 
   static async getUserProfile(uid: string): Promise<UserProfile | null> {
-    const userRef = doc(db, COLLECTIONS.USERS, uid);
-    const userSnap = await getDoc(userRef);
-    
-    if (userSnap.exists()) {
-      return userSnap.data() as UserProfile;
+    await delay();
+    return mockData.users.get(uid) || null;
+  }
+
+  static async updateUserProfile(uid: string, updates: Partial<UserProfile>): Promise<void> {
+    await delay();
+    const existing = mockData.users.get(uid);
+    if (existing) {
+      mockData.users.set(uid, { ...existing, ...updates });
     }
-    return null;
+  }
+
+  static async deleteUserProfile(uid: string): Promise<void> {
+    await delay();
+    mockData.users.delete(uid);
   }
 
   // ===== LISTING OPERATIONS =====
   
-  static async createListing(listing: Omit<Listing, 'id' | 'createdAt' | 'updatedAt' | 'views' | 'favorites' | 'inquiries'>): Promise<string> {
-    const listingsRef = collection(db, COLLECTIONS.LISTINGS);
-    const docRef = await addDoc(listingsRef, {
+  static async createListing(listing: Omit<Listing, 'id'>): Promise<string> {
+    await delay();
+    const id = generateId();
+    const newListing: Listing = {
       ...listing,
-      views: 0,
-      favorites: 0,
-      inquiries: 0,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-    return docRef.id;
+      id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    mockData.listings.set(id, newListing);
+    return id;
   }
 
-  static async updateListing(listingId: string, updates: Partial<Listing>): Promise<void> {
-    const listingRef = doc(db, COLLECTIONS.LISTINGS, listingId);
-    await updateDoc(listingRef, {
-      ...updates,
-      updatedAt: serverTimestamp(),
-    });
+  static async getListing(id: string): Promise<Listing | null> {
+    await delay();
+    return mockData.listings.get(id) || null;
   }
 
-  static async getListing(listingId: string): Promise<Listing | null> {
-    const listingRef = doc(db, COLLECTIONS.LISTINGS, listingId);
-    const listingSnap = await getDoc(listingRef);
-    
-    if (listingSnap.exists()) {
-      return { id: listingSnap.id, ...listingSnap.data() } as Listing;
+  static async updateListing(id: string, updates: Partial<Listing>): Promise<void> {
+    await delay();
+    const existing = mockData.listings.get(id);
+    if (existing) {
+      mockData.listings.set(id, { ...existing, ...updates, updatedAt: new Date().toISOString() });
     }
-    return null;
+  }
+
+  static async deleteListing(id: string): Promise<void> {
+    await delay();
+    mockData.listings.delete(id);
   }
 
   static async getUserListings(ownerId: string): Promise<Listing[]> {
-    const listingsRef = collection(db, COLLECTIONS.LISTINGS);
-    const q = query(
-      listingsRef,
-      where('ownerId', '==', ownerId),
-      orderBy('createdAt', 'desc')
-    );
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Listing[];
+    await delay();
+    return Array.from(mockData.listings.values()).filter(listing => listing.ownerId === ownerId);
   }
 
-  static async searchListings(filters: {
-    category?: string;
-    location?: string;
-    minPrice?: number;
-    maxPrice?: number;
-    available?: boolean;
-  }): Promise<Listing[]> {
-    const listingsRef = collection(db, COLLECTIONS.LISTINGS);
-    let q = query(listingsRef, where('status', '==', 'active'));
-    
-    if (filters.category) {
-      q = query(q, where('category', '==', filters.category));
-    }
-    
-    if (filters.available) {
-      q = query(q, where('availability.isAvailable', '==', true));
-    }
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Listing[];
+  static async getListingsByCategory(category: string): Promise<Listing[]> {
+    await delay();
+    return Array.from(mockData.listings.values()).filter(listing => listing.category === category);
+  }
+
+  static async searchListings(searchTerm: string): Promise<Listing[]> {
+    await delay();
+    const term = searchTerm.toLowerCase();
+    return Array.from(mockData.listings.values()).filter(listing => 
+      listing.title.toLowerCase().includes(term) ||
+      listing.description.toLowerCase().includes(term) ||
+      listing.location.address.toLowerCase().includes(term)
+    );
   }
 
   // ===== BOOKING OPERATIONS =====
   
-  static async createBooking(booking: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
-    const bookingsRef = collection(db, COLLECTIONS.BOOKINGS);
-    const docRef = await addDoc(bookingsRef, {
+  static async createBooking(booking: Omit<Booking, 'id'>): Promise<string> {
+    await delay();
+    const id = generateId();
+    const newBooking: Booking = {
       ...booking,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-    return docRef.id;
+      id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    mockData.bookings.set(id, newBooking);
+    return id;
   }
 
-  static async updateBooking(bookingId: string, updates: Partial<Booking>): Promise<void> {
-    const bookingRef = doc(db, COLLECTIONS.BOOKINGS, bookingId);
-    await updateDoc(bookingRef, {
-      ...updates,
-      updatedAt: serverTimestamp(),
-    });
+  static async getBooking(id: string): Promise<Booking | null> {
+    await delay();
+    return mockData.bookings.get(id) || null;
+  }
+
+  static async updateBooking(id: string, updates: Partial<Booking>): Promise<void> {
+    await delay();
+    const existing = mockData.bookings.get(id);
+    if (existing) {
+      mockData.bookings.set(id, { ...existing, ...updates, updatedAt: new Date().toISOString() });
+    }
+  }
+
+  static async deleteBooking(id: string): Promise<void> {
+    await delay();
+    mockData.bookings.delete(id);
   }
 
   static async getUserBookings(userId: string, userType: 'renter' | 'owner'): Promise<Booking[]> {
-    const bookingsRef = collection(db, COLLECTIONS.BOOKINGS);
-    const field = userType === 'renter' ? 'renterId' : 'ownerId';
-    const q = query(
-      bookingsRef,
-      where(field, '==', userId),
-      orderBy('createdAt', 'desc')
+    await delay();
+    return Array.from(mockData.bookings.values()).filter(booking => 
+      userType === 'renter' ? booking.renterId === userId : booking.ownerId === userId
     );
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Booking[];
   }
 
-  // ===== FAVORITES OPERATIONS =====
+  // ===== FAVORITE OPERATIONS =====
   
   static async addToFavorites(userId: string, listingId: string): Promise<string> {
-    const favoritesRef = collection(db, COLLECTIONS.FAVORITES);
-    const docRef = await addDoc(favoritesRef, {
+    await delay();
+    const id = generateId();
+    const favorite: Favorite = {
+      id,
       userId,
       listingId,
-      createdAt: serverTimestamp(),
-    });
-    return docRef.id;
+      createdAt: new Date().toISOString(),
+    };
+    mockData.favorites.set(id, favorite);
+    return id;
   }
 
-  static async removeFromFavorites(favoriteId: string): Promise<void> {
-    const favoriteRef = doc(db, COLLECTIONS.FAVORITES, favoriteId);
-    await deleteDoc(favoriteRef);
+  static async removeFromFavorites(userId: string, listingId: string): Promise<void> {
+    await delay();
+    const favorite = Array.from(mockData.favorites.values()).find(f => 
+      f.userId === userId && f.listingId === listingId
+    );
+    if (favorite) {
+      mockData.favorites.delete(favorite.id);
+    }
   }
 
   static async getUserFavorites(userId: string): Promise<Favorite[]> {
-    const favoritesRef = collection(db, COLLECTIONS.FAVORITES);
-    const q = query(
-      favoritesRef,
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
-    );
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Favorite[];
+    await delay();
+    return Array.from(mockData.favorites.values()).filter(favorite => favorite.userId === userId);
   }
 
-  static async isFavorite(userId: string, listingId: string): Promise<string | null> {
-    const favoritesRef = collection(db, COLLECTIONS.FAVORITES);
-    const q = query(
-      favoritesRef,
-      where('userId', '==', userId),
-      where('listingId', '==', listingId)
+  static async isFavorite(userId: string, listingId: string): Promise<boolean> {
+    await delay();
+    return Array.from(mockData.favorites.values()).some(f => 
+      f.userId === userId && f.listingId === listingId
     );
-    
-    const querySnapshot = await getDocs(q);
-    if (!querySnapshot.empty) {
-      return querySnapshot.docs[0].id;
-    }
-    return null;
   }
 
   // ===== REVIEW OPERATIONS =====
   
-  static async createReview(review: Omit<Review, 'id' | 'createdAt'>): Promise<string> {
-    const reviewsRef = collection(db, COLLECTIONS.REVIEWS);
-    const docRef = await addDoc(reviewsRef, {
+  static async createReview(review: Omit<Review, 'id'>): Promise<string> {
+    await delay();
+    const id = generateId();
+    const newReview: Review = {
       ...review,
-      createdAt: serverTimestamp(),
-    });
-    return docRef.id;
+      id,
+      createdAt: new Date().toISOString(),
+    };
+    mockData.reviews.set(id, newReview);
+    return id;
   }
 
-  static async getListingReviews(listingId: string): Promise<Review[]> {
-    const reviewsRef = collection(db, COLLECTIONS.REVIEWS);
-    const q = query(
-      reviewsRef,
-      where('listingId', '==', listingId),
-      orderBy('createdAt', 'desc')
-    );
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Review[];
+  static async getReviews(listingId: string): Promise<Review[]> {
+    await delay();
+    return Array.from(mockData.reviews.values()).filter(review => review.listingId === listingId);
   }
 
   static async getUserReviews(userId: string): Promise<Review[]> {
-    const reviewsRef = collection(db, COLLECTIONS.REVIEWS);
-    const q = query(
-      reviewsRef,
-      where('revieweeId', '==', userId),
-      orderBy('createdAt', 'desc')
-    );
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Review[];
-  }
-
-  static async getBookingReviews(bookingId: string): Promise<Review[]> {
-    const reviewsRef = collection(db, COLLECTIONS.REVIEWS);
-    const q = query(
-      reviewsRef,
-      where('bookingId', '==', bookingId),
-      orderBy('createdAt', 'desc')
-    );
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Review[];
-  }
-
-  static async updateReview(reviewId: string, updates: Partial<Review>): Promise<void> {
-    const reviewRef = doc(db, COLLECTIONS.REVIEWS, reviewId);
-    await updateDoc(reviewRef, {
-      ...updates,
-      updatedAt: serverTimestamp(),
-    });
-  }
-
-  static async deleteReview(reviewId: string): Promise<void> {
-    const reviewRef = doc(db, COLLECTIONS.REVIEWS, reviewId);
-    await deleteDoc(reviewRef);
-  }
-
-  static async getBooking(bookingId: string): Promise<Booking | null> {
-    const bookingRef = doc(db, COLLECTIONS.BOOKINGS, bookingId);
-    const bookingSnap = await getDoc(bookingRef);
-    
-    if (bookingSnap.exists()) {
-      return { id: bookingSnap.id, ...bookingSnap.data() } as Booking;
-    }
-    return null;
+    await delay();
+    return Array.from(mockData.reviews.values()).filter(review => review.reviewerId === userId);
   }
 
   // ===== NOTIFICATION OPERATIONS =====
   
-  static async createNotification(notification: Omit<Notification, 'id' | 'createdAt'>): Promise<string> {
-    const notificationsRef = collection(db, COLLECTIONS.NOTIFICATIONS);
-    const docRef = await addDoc(notificationsRef, {
+  static async createNotification(notification: Omit<Notification, 'id'>): Promise<string> {
+    await delay();
+    const id = generateId();
+    const newNotification: Notification = {
       ...notification,
-      createdAt: serverTimestamp(),
-    });
-    return docRef.id;
+      id,
+      createdAt: new Date().toISOString(),
+    };
+    mockData.notifications.set(id, newNotification);
+    return id;
   }
 
   static async getUserNotifications(userId: string): Promise<Notification[]> {
-    const notificationsRef = collection(db, COLLECTIONS.NOTIFICATIONS);
-    const q = query(
-      notificationsRef,
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc'),
-      limit(50)
-    );
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Notification[];
+    await delay();
+    return Array.from(mockData.notifications.values())
+      .filter(notification => notification.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
   static async markNotificationAsRead(notificationId: string): Promise<void> {
-    const notificationRef = doc(db, COLLECTIONS.NOTIFICATIONS, notificationId);
-    await updateDoc(notificationRef, {
-      isRead: true,
+    await delay();
+    const notification = mockData.notifications.get(notificationId);
+    if (notification) {
+      mockData.notifications.set(notificationId, { ...notification, isRead: true });
+    }
+  }
+
+  static async markAllNotificationsAsRead(userId: string): Promise<void> {
+    await delay();
+    const userNotifications = Array.from(mockData.notifications.values())
+      .filter(notification => notification.userId === userId && !notification.isRead);
+    
+    userNotifications.forEach(notification => {
+      mockData.notifications.set(notification.id, { ...notification, isRead: true });
     });
   }
 
   // ===== ID VERIFICATION OPERATIONS =====
   
-  static async submitIDVerification(verification: Omit<IDVerification, 'id' | 'submittedAt'>): Promise<string> {
-    const verificationsRef = collection(db, COLLECTIONS.ID_VERIFICATIONS);
-    const docRef = await addDoc(verificationsRef, {
+  static async createIDVerification(verification: Omit<IDVerification, 'id'>): Promise<string> {
+    await delay();
+    const id = generateId();
+    const newVerification: IDVerification = {
       ...verification,
-      submittedAt: serverTimestamp(),
-    });
-    return docRef.id;
+      id,
+      submittedAt: new Date().toISOString(),
+    };
+    mockData.idVerifications.set(id, newVerification);
+    return id;
   }
 
-  static async updateVerificationStatus(verificationId: string, status: IDVerification['status'], reviewedBy: string, notes?: string): Promise<void> {
-    const verificationRef = doc(db, COLLECTIONS.ID_VERIFICATIONS, verificationId);
-    await updateDoc(verificationRef, {
-      status,
-      reviewedAt: serverTimestamp(),
-      reviewedBy,
-      notes,
-    });
+  static async getIDVerification(userId: string): Promise<IDVerification | null> {
+    await delay();
+    return Array.from(mockData.idVerifications.values())
+      .find(verification => verification.userId === userId) || null;
   }
 
-  static async getUserVerification(userId: string): Promise<IDVerification | null> {
-    const verificationsRef = collection(db, COLLECTIONS.ID_VERIFICATIONS);
-    const q = query(
-      verificationsRef,
-      where('userId', '==', userId),
-      orderBy('submittedAt', 'desc'),
-      limit(1)
-    );
-    
-    const querySnapshot = await getDocs(q);
-    if (!querySnapshot.empty) {
-      return {
-        id: querySnapshot.docs[0].id,
-        ...querySnapshot.docs[0].data()
-      } as IDVerification;
+  static async updateIDVerification(id: string, updates: Partial<IDVerification>): Promise<void> {
+    await delay();
+    const existing = mockData.idVerifications.get(id);
+    if (existing) {
+      mockData.idVerifications.set(id, { ...existing, ...updates });
     }
-    return null;
-  }
-
-  // ===== FILE UPLOAD OPERATIONS =====
-  
-  static async uploadFile(file: Blob, path: string): Promise<string> {
-    const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, file);
-    return await getDownloadURL(storageRef);
-  }
-
-  static async uploadProfileImage(userId: string, file: Blob): Promise<string> {
-    const path = `profile-images/${userId}/${Date.now()}`;
-    return await this.uploadFile(file, path);
-  }
-
-  static async uploadListingImage(listingId: string, file: Blob, imageIndex: number): Promise<string> {
-    const path = `listing-images/${listingId}/${imageIndex}-${Date.now()}`;
-    return await this.uploadFile(file, path);
-  }
-
-  static async uploadVerificationDocument(userId: string, documentType: 'idFront' | 'idBack' | 'selfie', file: Blob): Promise<string> {
-    const path = `verification-documents/${userId}/${documentType}-${Date.now()}`;
-    return await this.uploadFile(file, path);
-  }
-
-  static async deleteFile(url: string): Promise<void> {
-    const fileRef = ref(storage, url);
-    await deleteObject(fileRef);
   }
 
   // ===== PAYMENT OPERATIONS =====
   
   static async createPayment(payment: any): Promise<string> {
-    const paymentsRef = collection(db, 'payments');
-    const docRef = await addDoc(paymentsRef, {
+    await delay();
+    const id = generateId();
+    const newPayment = {
       ...payment,
-      createdAt: serverTimestamp(),
-    });
-    return docRef.id;
+      id,
+      createdAt: new Date().toISOString(),
+    };
+    mockData.payments.set(id, newPayment);
+    return id;
   }
 
   static async getUserPayments(userId: string): Promise<any[]> {
-    const paymentsRef = collection(db, 'payments');
-    const q = query(
-      paymentsRef,
-      where('renterId', '==', userId),
-      orderBy('createdAt', 'desc')
+    await delay();
+    return Array.from(mockData.payments.values()).filter(payment => 
+      payment.renterId === userId || payment.ownerId === userId
     );
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
   }
 
-  static async getPayment(paymentId: string): Promise<any | null> {
-    const paymentRef = doc(db, 'payments', paymentId);
-    const paymentSnap = await getDoc(paymentRef);
-    
-    if (paymentSnap.exists()) {
-      return { id: paymentSnap.id, ...paymentSnap.data() };
-    }
-    return null;
-  }
-
-  static async createRefund(refund: any): Promise<string> {
-    const refundsRef = collection(db, 'refunds');
-    const docRef = await addDoc(refundsRef, {
-      ...refund,
-      createdAt: serverTimestamp(),
-    });
-    return docRef.id;
-  }
-
-  static async getUserRefunds(userId: string): Promise<any[]> {
-    const refundsRef = collection(db, 'refunds');
-    const q = query(
-      refundsRef,
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
-    );
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-  }
-
-  // ===== BILLING OPERATIONS =====
+  // ===== FILE UPLOAD OPERATIONS =====
   
-  static async createBillingAccount(account: any): Promise<string> {
-    const accountsRef = collection(db, 'billing_accounts');
-    const docRef = await addDoc(accountsRef, {
-      ...account,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-    return docRef.id;
+  static async uploadFile(file: any, path: string): Promise<string> {
+    await delay();
+    // Mock file upload - return a mock URL
+    return `https://mock-storage.com/${path}/${generateId()}`;
   }
 
-  static async updateBillingAccount(accountId: string, updates: any): Promise<void> {
-    const accountRef = doc(db, 'billing_accounts', accountId);
-    await updateDoc(accountRef, {
-      ...updates,
-      updatedAt: serverTimestamp(),
-    });
+  static async deleteFile(url: string): Promise<void> {
+    await delay();
+    // Mock file deletion
+    console.log('Mock file deletion:', url);
   }
 
-  static async getBillingAccount(ownerId: string): Promise<any | null> {
-    const accountsRef = collection(db, 'billing_accounts');
-    const q = query(
-      accountsRef,
-      where('ownerId', '==', ownerId),
-      limit(1)
-    );
-    
-    const querySnapshot = await getDocs(q);
-    if (!querySnapshot.empty) {
-      return {
-        id: querySnapshot.docs[0].id,
-        ...querySnapshot.docs[0].data()
-      };
-    }
-    return null;
+  // ===== ANALYTICS OPERATIONS =====
+  
+  static async getListingAnalytics(listingId: string): Promise<any> {
+    await delay();
+    return {
+      views: Math.floor(Math.random() * 1000),
+      favorites: Math.floor(Math.random() * 100),
+      inquiries: Math.floor(Math.random() * 50),
+      bookings: Math.floor(Math.random() * 20),
+    };
   }
 
-  static async createEarnings(earnings: any): Promise<string> {
-    const earningsRef = collection(db, 'earnings');
-    const docRef = await addDoc(earningsRef, {
-      ...earnings,
-      createdAt: serverTimestamp(),
-    });
-    return docRef.id;
-  }
-
-  static async getOwnerEarnings(ownerId: string): Promise<any[]> {
-    const earningsRef = collection(db, 'earnings');
-    const q = query(
-      earningsRef,
-      where('ownerId', '==', ownerId),
-      orderBy('createdAt', 'desc')
-    );
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-  }
-
-  static async createPayout(payout: any): Promise<string> {
-    const payoutsRef = collection(db, 'payouts');
-    const docRef = await addDoc(payoutsRef, {
-      ...payout,
-      createdAt: serverTimestamp(),
-    });
-    return docRef.id;
-  }
-
-  static async getOwnerPayouts(ownerId: string): Promise<any[]> {
-    const payoutsRef = collection(db, 'payouts');
-    const q = query(
-      payoutsRef,
-      where('ownerId', '==', ownerId),
-      orderBy('createdAt', 'desc')
-    );
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-  }
-
-  static async getPayout(payoutId: string): Promise<any | null> {
-    const payoutRef = doc(db, 'payouts', payoutId);
-    const payoutSnap = await getDoc(payoutRef);
-    
-    if (payoutSnap.exists()) {
-      return { id: payoutSnap.id, ...payoutSnap.data() };
-    }
-    return null;
-  }
-
-  static async createTaxDocument(document: any): Promise<string> {
-    const documentsRef = collection(db, 'tax_documents');
-    const docRef = await addDoc(documentsRef, {
-      ...document,
-      createdAt: serverTimestamp(),
-    });
-    return docRef.id;
-  }
-
-  static async getTaxDocuments(ownerId: string): Promise<any[]> {
-    const documentsRef = collection(db, 'tax_documents');
-    const q = query(
-      documentsRef,
-      where('ownerId', '==', ownerId),
-      orderBy('createdAt', 'desc')
-    );
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+  static async getUserAnalytics(userId: string): Promise<any> {
+    await delay();
+    return {
+      totalListings: Array.from(mockData.listings.values()).filter(l => l.ownerId === userId).length,
+      totalBookings: Array.from(mockData.bookings.values()).filter(b => b.ownerId === userId).length,
+      totalEarnings: Math.floor(Math.random() * 10000),
+      averageRating: 4.5 + Math.random() * 0.5,
+    };
   }
 }

@@ -1,11 +1,9 @@
-import { auth } from '@/config/firebase';
-
 export class SimpleGoogleAuth {
   static async signInWithGoogle() {
     try {
       // This is a placeholder implementation
       // To enable Google Sign-In, you need to:
-      // 1. Install expo-auth-session: npx expo install expo-auth-session expo-crypto
+      // 1. Install expo-auth-session: npx expo install expo-auth-session
       // 2. Configure Google OAuth credentials in Google Cloud Console
       // 3. Update the GoogleAuthService.ts with proper OAuth flow
       
@@ -26,7 +24,8 @@ export class SimpleGoogleAuth {
 
   static async signOut() {
     try {
-      await auth.signOut();
+      // Mock sign out - in a real app, this would clear auth state
+      console.log('Mock Google Sign-Out');
       return { success: true };
     } catch (error) {
       console.error('Google Sign-Out Error:', error);

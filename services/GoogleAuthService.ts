@@ -1,12 +1,11 @@
-import { auth } from '@/config/firebase';
-import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { UserDataService } from './UserDataService';
 
 // Dynamic import for Google Sign-In
 const loadGoogleSignIn = async () => {
   try {
-    const { GoogleSignin: GS } = await import('@react-native-google-signin/google-signin');
-    return GS;
+    // Mock Google Sign-In for demo purposes
+    console.log('Mock: Google Sign-In package not available');
+    return null;
   } catch (error) {
     console.warn('Google Sign-In package not available:', error);
     return null;
@@ -37,41 +36,30 @@ export class GoogleAuthService {
         };
       }
 
-      // Configure Google Sign-In
-      GoogleSignIn.configure({
-        webClientId: '323268122303-icn4c6rvtkfro9o8q51c5q44tsc5na33.apps.googleusercontent.com',
-        offlineAccess: true,
-        hostedDomain: '',
-        forceCodeForRefreshToken: true,
-      });
+      // Mock Google Sign-In flow for demo
+      console.log('Mock: Google Sign-In flow');
 
-      // Check if your device supports Google Play
-      await GoogleSignIn.hasPlayServices({ showPlayServicesUpdateDialog: true });
-
-      // Get the users ID token
-      const { idToken } = await GoogleSignIn.signIn();
-
-      // Create a Google credential with the token
-      const googleCredential = GoogleAuthProvider.credential(idToken);
-
-      // Sign-in the user with the credential
-      const userCredential = await signInWithCredential(auth, googleCredential);
-      const user = userCredential.user;
+      // Mock user data for demo purposes
+      const mockUser = {
+        uid: 'google_user_' + Date.now(),
+        email: 'user@gmail.com',
+        displayName: 'Google User',
+      };
 
       // Create or update user profile
       let profile = await UserDataService.getUserProfile();
       if (!profile) {
         profile = await UserDataService.createInitialProfile(
-          user.uid,
-          user.email || '',
-          user.displayName || 'User',
+          mockUser.uid,
+          mockUser.email || '',
+          mockUser.displayName || 'User',
           'renter'
         );
       }
 
       return {
         success: true,
-        user: user,
+        user: mockUser,
         profile: profile,
       };
     } catch (error: any) {
@@ -89,12 +77,12 @@ export class GoogleAuthService {
     try {
       const GoogleSignIn = await loadGoogleSignIn();
       if (GoogleSignIn) {
-        // Sign out from Google Sign-In
-        await GoogleSignIn.signOut();
+        // Mock sign out from Google Sign-In
+        console.log('Mock: Google Sign-Out');
       }
       
-      // Sign out from Firebase
-      await auth.signOut();
+      // Mock sign out - in a real app, this would clear auth state
+      console.log('Mock Google Sign-Out');
       return { success: true };
     } catch (error) {
       console.error('Google Sign-Out Error:', error);

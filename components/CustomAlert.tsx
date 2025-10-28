@@ -1,7 +1,6 @@
-import { VibrantPlum } from '@/constants/Colors';
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
-    Alert,
     Dimensions,
     Modal,
     StyleSheet,
@@ -13,52 +12,73 @@ import {
 interface CustomAlertProps {
   visible: boolean;
   title: string;
-  message?: string;
-  buttons?: Array<{
-    text: string;
-    onPress?: () => void;
-    style?: 'default' | 'cancel' | 'destructive';
-  }>;
+  message: string;
+  type?: 'success' | 'error' | 'warning' | 'info';
   onClose: () => void;
+  onConfirm?: () => void;
+  showCancel?: boolean;
+  confirmText?: string;
+  cancelText?: string;
 }
 
-const { width } = Dimensions.get('window');
-
-export const CustomAlert: React.FC<CustomAlertProps> = ({
+const CustomAlert: React.FC<CustomAlertProps> = ({
   visible,
   title,
   message,
-  buttons = [{ text: 'OK', onPress: () => {} }],
+  type = 'info',
   onClose,
+  onConfirm,
+  showCancel = false,
+  confirmText = 'OK',
+  cancelText = 'Cancel',
 }) => {
-  const handleButtonPress = (button: any) => {
-    if (button.onPress) {
-      button.onPress();
+  const getAlertStyles = () => {
+    switch (type) {
+      case 'success':
+        return {
+          backgroundColor: '#10b981',
+          borderColor: '#059669',
+          iconColor: '#ffffff',
+          textColor: '#ffffff',
+        };
+      case 'error':
+        return {
+          backgroundColor: '#ef4444',
+          borderColor: '#dc2626',
+          iconColor: '#ffffff',
+          textColor: '#ffffff',
+        };
+      case 'warning':
+        return {
+          backgroundColor: '#f59e0b',
+          borderColor: '#d97706',
+          iconColor: '#ffffff',
+          textColor: '#ffffff',
+        };
+      default:
+        return {
+          backgroundColor: '#3b82f6',
+          borderColor: '#2563eb',
+          iconColor: '#ffffff',
+          textColor: '#ffffff',
+        };
     }
-    onClose();
   };
 
-  const getButtonStyle = (style?: string) => {
-    switch (style) {
-      case 'destructive':
-        return [styles.button, styles.destructiveButton];
-      case 'cancel':
-        return [styles.button, styles.cancelButton];
+  const getIcon = () => {
+    switch (type) {
+      case 'success':
+        return 'checkmark-circle';
+      case 'error':
+        return 'close-circle';
+      case 'warning':
+        return 'warning';
       default:
-        return [styles.button, styles.defaultButton];
+        return 'information-circle';
     }
   };
 
-  const getButtonTextStyle = (style?: string) => {
-    switch (style) {
-      case 'destructive':
-        return [styles.buttonText, styles.destructiveButtonText];
-      case 'cancel':
-        return [styles.buttonText, styles.cancelButtonText];
-      default:
-        return [styles.buttonText, styles.defaultButtonText];
-    }
-  };
+  const styles = getAlertStyles();
 
   return (
     <Modal
@@ -68,84 +88,48 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={styles.alertContainer}>
+        <View style={[styles.alertContainer, { backgroundColor: styles.backgroundColor, borderColor: styles.borderColor }]}>
           <View style={styles.header}>
-            <Text style={styles.title}>{title}</Text>
+            <Ionicons 
+              name={getIcon()} 
+              size={32} 
+              color={styles.iconColor} 
+            />
+            <Text style={[styles.title, { color: styles.textColor }]}>
+              {title}
+            </Text>
           </View>
           
-          {message && (
-            <View style={styles.messageContainer}>
-              <Text style={styles.message}>{message}</Text>
-            </View>
-          )}
+          <Text style={[styles.message, { color: styles.textColor }]}>
+            {message}
+          </Text>
           
           <View style={styles.buttonContainer}>
-            {buttons.map((button, index) => (
+            {showCancel && (
               <TouchableOpacity
-                key={index}
-                style={getButtonStyle(button.style)}
-                onPress={() => handleButtonPress(button)}
+                style={[styles.button, styles.cancelButton]}
+                onPress={onClose}
               >
-                <Text style={getButtonTextStyle(button.style)}>
-                  {button.text}
-                </Text>
+                <Text style={styles.cancelButtonText}>{cancelText}</Text>
               </TouchableOpacity>
-            ))}
+            )}
+            
+            <TouchableOpacity
+              style={[styles.button, styles.confirmButton]}
+              onPress={() => {
+                if (onConfirm) {
+                  onConfirm();
+                } else {
+                  onClose();
+                }
+              }}
+            >
+              <Text style={styles.confirmButtonText}>{confirmText}</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
     </Modal>
-  );
-};
-
-// Enhanced alert utilities that use the custom alert
-export const showCustomAlert = (
-  title: string,
-  message?: string,
-  buttons?: Array<{
-    text: string;
-    onPress?: () => void;
-    style?: 'default' | 'cancel' | 'destructive';
-  }>
-) => {
-  // For now, fall back to native alert but with better styling
-  // In a full implementation, you'd manage the custom alert state
-  Alert.alert(title, message, buttons);
-};
-
-export const showPlumSuccessAlert = (
-  title: string,
-  message?: string,
-  onPress?: () => void
-) => {
-  Alert.alert(
-    title,
-    message,
-    [
-      {
-        text: 'OK',
-        onPress: onPress,
-        style: 'default'
-      }
-    ]
-  );
-};
-
-export const showPlumErrorAlert = (
-  title: string,
-  message?: string,
-  onPress?: () => void
-) => {
-  Alert.alert(
-    title,
-    message,
-    [
-      {
-        text: 'OK',
-        onPress: onPress,
-        style: 'default'
-      }
-    ]
   );
 };
 
@@ -158,41 +142,36 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   alertContainer: {
-    backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 24,
-    width: width * 0.85,
-    maxWidth: 400,
+    minWidth: 280,
+    maxWidth: Dimensions.get('window').width - 40,
+    borderWidth: 2,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 16,
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1f2937',
-    textAlign: 'center',
-  },
-  messageContainer: {
-    marginBottom: 24,
+    marginLeft: 12,
+    flex: 1,
   },
   message: {
     fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
     lineHeight: 22,
+    marginBottom: 24,
+    textAlign: 'center',
   },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
     gap: 12,
   },
   button: {
@@ -202,28 +181,26 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
   },
-  defaultButton: {
-    backgroundColor: VibrantPlum,
+  confirmButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   cancelButton: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
-  destructiveButton: {
-    backgroundColor: '#ef4444',
-  },
-  buttonText: {
+  confirmButtonText: {
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
-  defaultButtonText: {
-    color: '#ffffff',
-  },
   cancelButtonText: {
-    color: '#374151',
-  },
-  destructiveButtonText: {
     color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
+
+export default CustomAlert;

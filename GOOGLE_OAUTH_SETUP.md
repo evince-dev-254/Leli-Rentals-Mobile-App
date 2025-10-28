@@ -4,7 +4,7 @@ This guide will help you set up Google Sign-In authentication for your Leli Rent
 
 ## Current Status
 
-✅ **Packages Installed** - `expo-auth-session` and `expo-crypto` are now installed
+✅ **Packages Installed** - `expo-auth-session` and `expo-web-browser` are now installed
 ⚠️ **Google OAuth Configuration Required** - You need to configure your Google OAuth credentials to enable Google Sign-In
 
 ## Prerequisites

@@ -4,6 +4,7 @@
  */
 
 import { CryptoService } from '@/services/CryptoService';
+import { fetchWithTimeout, isNetworkError, retryWithBackoff } from '@/utils/networkUtils';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -60,10 +61,14 @@ class ApiClient {
     headers['X-Request-Time'] = Date.now().toString();
 
     try {
-      const response = await fetch(url, {
-        ...options,
-        headers,
-      });
+      // Use retry with backoff for network resilience
+      const response = await retryWithBackoff(
+        () => fetchWithTimeout(url, {
+          ...options,
+          headers,
+        }, 15000), // 15 second timeout
+        2 // Max 2 retries
+      );
 
       const data = await response.json();
 
@@ -81,9 +86,17 @@ class ApiClient {
         message: data.message,
       };
     } catch (error) {
+      // Handle different types of errors
+      if (isNetworkError(error)) {
+        return {
+          success: false,
+          error: 'Network connection issue. Please check your internet connection and try again.',
+        };
+      }
+      
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Network error',
+        error: error instanceof Error ? error.message : 'Request failed',
       };
     }
   }
@@ -149,7 +162,7 @@ class ApiClient {
   }) {
     const queryParams = new URLSearchParams();
     if (params) {
-      Object.entries(params).forEach(([key, value]) => {
+      (Object as any).entries(params).forEach(([key, value]: [string, any]) => {
         if (value !== undefined) {
           queryParams.append(key, value.toString());
         }

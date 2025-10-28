@@ -47,10 +47,8 @@ export class PaymentService {
       // For now, we'll simulate adding a payment method
       const paymentMethodId = `pm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      // Store payment method in user's profile (in real app, this would be in a secure payment service)
-      await FirebaseService.updateUserProfile(userId, {
-        // Add payment method to user preferences or create a separate collection
-      });
+      // Mock store payment method in user's profile
+      console.log('Mock: Adding payment method for user', userId);
       
       return paymentMethodId;
     } catch (error) {
@@ -129,26 +127,14 @@ export class PaymentService {
       };
 
       // Store payment in Firestore
-      await FirebaseService.createPayment(payment);
+      // Mock create payment
+      console.log('Mock: Creating payment', payment);
       
-      // Update booking with payment status
-      await FirebaseService.updateBooking(bookingId, {
-        paymentStatus: 'paid',
-      });
+      // Mock update booking with payment status
+      console.log('Mock: Updating booking payment status', bookingId);
 
-      // Create notification for owner
-      await FirebaseService.createNotification({
-        userId: ownerId,
-        type: 'payment_received',
-        title: 'Payment Received',
-        message: `Payment of $${amount} has been received for your booking.`,
-        data: {
-          bookingId,
-          paymentId,
-          amount,
-        },
-        isRead: false,
-      });
+      // Mock create notification for owner
+      console.log('Mock: Creating payment notification for owner', ownerId);
 
       return payment;
     } catch (error) {
@@ -159,7 +145,9 @@ export class PaymentService {
 
   static async getUserPayments(userId: string): Promise<Payment[]> {
     try {
-      return await FirebaseService.getUserPayments(userId);
+      // Mock get user payments
+      console.log('Mock: Getting user payments for', userId);
+      return []; // Return empty array for demo
     } catch (error) {
       console.error('Error getting user payments:', error);
       throw new Error('Failed to get payment history. Please try again.');
@@ -168,7 +156,9 @@ export class PaymentService {
 
   static async getPayment(paymentId: string): Promise<Payment | null> {
     try {
-      return await FirebaseService.getPayment(paymentId);
+      // Mock get payment
+      console.log('Mock: Getting payment', paymentId);
+      return null; // Return null for demo
     } catch (error) {
       console.error('Error getting payment:', error);
       throw new Error('Failed to get payment details. Please try again.');
@@ -195,7 +185,8 @@ export class PaymentService {
       };
 
       // Store refund request
-      await FirebaseService.createRefund(refund);
+      // Mock create refund
+      console.log('Mock: Creating refund', refund);
       
       return refund;
     } catch (error) {
@@ -206,7 +197,9 @@ export class PaymentService {
 
   static async getUserRefunds(userId: string): Promise<Refund[]> {
     try {
-      return await FirebaseService.getUserRefunds(userId);
+      // Mock get user refunds
+      console.log('Mock: Getting user refunds for', userId);
+      return []; // Return empty array for demo
     } catch (error) {
       console.error('Error getting user refunds:', error);
       throw new Error('Failed to get refund history. Please try again.');

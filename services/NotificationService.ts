@@ -1,224 +1,180 @@
-import Constants from 'expo-constants';
-import { Platform } from 'react-native';
+import { Alert } from 'react-native';
 
-// Simplified storage - use in-memory storage for mobile
-const getStorage = () => {
-  // Use in-memory storage for mobile to avoid AsyncStorage issues
-  const memoryStorage: { [key: string]: string } = {};
-  
-  return {
-    getItem: (key: string) => Promise.resolve(memoryStorage[key] || null),
-    setItem: (key: string, value: string) => {
-      memoryStorage[key] = value;
-      return Promise.resolve();
-    },
-    removeItem: (key: string) => {
-      delete memoryStorage[key];
-      return Promise.resolve();
-    }
+export interface NotificationOptions {
+  title: string;
+  message: string;
+  type: 'error' | 'warning' | 'success' | 'info';
+  action?: {
+    label: string;
+    onPress: () => void;
   };
-};
-
-// Conditional imports to handle development environment
-let Device: any = null;
-let Notifications: any = null;
-
-try {
-  Device = require('expo-device');
-  Notifications = require('expo-notifications');
-} catch (error) {
-  console.log('Native modules not available in development environment');
-}
-
-// Configure notification behavior (only if available)
-if (Notifications) {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-    }),
-  });
+  duration?: number;
 }
 
 export class NotificationService {
-  static async registerForPushNotificationsAsync() {
-    // Return early if native modules aren't available
-    if (!Device || !Notifications) {
-      console.log('Native modules not available, skipping push notification registration');
-      return null;
+  private static instance: NotificationService;
+
+  static getInstance(): NotificationService {
+    if (!NotificationService.instance) {
+      NotificationService.instance = new NotificationService();
     }
+    return NotificationService.instance;
+  }
 
-    let token;
+  /**
+   * Show a notification alert
+   */
+  showNotification(options: NotificationOptions): void {
+    const { title, message, type, action } = options;
 
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'Leli Rentals Notifications',
-        description: 'Notifications for rental updates, bookings, and reminders',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#FF231F7C',
-        sound: 'default',
-        enableVibrate: true,
-        enableLights: true,
-        showBadge: true,
+    // Create buttons array
+    const buttons: any[] = [];
+
+    if (action) {
+      buttons.push({
+        text: action.label,
+        onPress: action.onPress,
+        style: type === 'error' ? 'destructive' : 'default'
       });
     }
 
-    if (Device.isDevice) {
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-      
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
+    buttons.push({
+      text: 'OK',
+      style: type === 'success' ? 'default' : 'cancel'
+    });
+
+    // Show the alert
+    Alert.alert(title, message, buttons, { cancelable: true });
+  }
+
+  /**
+   * Show error notification
+   */
+  showError(title: string, message: string, action?: { label: string; onPress: () => void }): void {
+    this.showNotification({
+      title,
+      message,
+      type: 'error',
+      action
+    });
+  }
+
+  /**
+   * Show warning notification
+   */
+  showWarning(title: string, message: string, action?: { label: string; onPress: () => void }): void {
+    this.showNotification({
+      title,
+      message,
+      type: 'warning',
+      action
+    });
+  }
+
+  /**
+   * Show success notification
+   */
+  showSuccess(title: string, message: string, action?: { label: string; onPress: () => void }): void {
+    this.showNotification({
+      title,
+      message,
+      type: 'success',
+      action
+    });
+  }
+
+  /**
+   * Show info notification
+   */
+  showInfo(title: string, message: string, action?: { label: string; onPress: () => void }): void {
+    this.showNotification({
+      title,
+      message,
+      type: 'info',
+      action
+    });
+  }
+
+  /**
+   * Show network error notification
+   */
+  showNetworkError(): void {
+    this.showError(
+      'Network Error',
+      'Please check your internet connection and try again.'
+    );
+  }
+
+  /**
+   * Show authentication error notification
+   */
+  showAuthError(error: any): void {
+    if (error?.clerkError) {
+      const errorCode = error.errors?.[0]?.code;
+      const errorMessage = error.errors?.[0]?.message;
+
+      switch (errorCode) {
+        case 'form_identifier_exists':
+          this.showWarning(
+            'Email Already Exists',
+            'This email address is already registered. Please try signing in instead or use a different email address.',
+            {
+              label: 'Go to Login',
+              onPress: () => {
+                // This would need to be handled by the calling component
+                console.log('Redirect to login');
+              }
+            }
+          );
+          break;
+
+        case 'form_identifier_not_found':
+          this.showWarning(
+            'Account Not Found',
+            'No account found with this email address. Please check your email or sign up for a new account.',
+            {
+              label: 'Sign Up',
+              onPress: () => {
+                console.log('Redirect to signup');
+              }
+            }
+          );
+          break;
+
+        case 'form_password_incorrect':
+          this.showError(
+            'Incorrect Password',
+            'The password you entered is incorrect. Please try again or reset your password.'
+          );
+          break;
+
+        case 'form_password_pwned':
+          this.showError(
+            'Password Not Secure',
+            'This password has been found in data breaches. Please choose a stronger, unique password.'
+          );
+          break;
+
+        case 'too_many_requests':
+          this.showWarning(
+            'Too Many Attempts',
+            'You have made too many attempts. Please wait a few minutes before trying again.'
+          );
+          break;
+
+        default:
+          this.showError(
+            'Authentication Error',
+            errorMessage || 'An unexpected error occurred. Please try again.'
+          );
       }
-      
-      if (finalStatus !== 'granted') {
-        console.log('Failed to get push token for push notification!');
-        return null;
-      }
-      
-      token = (await Notifications.getExpoPushTokenAsync({
-        projectId: Constants.expoConfig?.extra?.eas?.projectId,
-      })).data;
     } else {
-      console.log('Must use physical device for Push Notifications');
-    }
-
-    return token;
-  }
-
-  static async sendWelcomeNotification(userName: string) {
-    if (!Notifications) {
-      console.log('Notifications not available, simulating welcome notification');
-      return;
-    }
-
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "🎉 Welcome to Leli Rentals!",
-        body: `Hi ${userName}! Welcome to the best rental platform. Start exploring amazing items to rent!`,
-        data: { type: 'welcome', userId: 'user123' },
-        sound: 'default',
-      },
-      trigger: { seconds: 2 },
-    });
-  }
-
-  static async sendReminderNotification(userName: string) {
-    if (!Notifications) {
-      console.log('Notifications not available, simulating reminder notification');
-      return;
-    }
-
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "🛍️ Don't miss out!",
-        body: `Hi ${userName}! Discover amazing items waiting for you. Start your rental journey today!`,
-        data: { type: 'reminder', userId: 'user123' },
-        sound: 'default',
-      },
-      trigger: { seconds: 10 }, // 10 seconds for demo, change to hours/days in production
-    });
-  }
-
-  static async sendBookingNotification(itemName: string) {
-    if (!Notifications) {
-      console.log('Notifications not available, simulating booking notification');
-      return;
-    }
-
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "✅ Booking Confirmed!",
-        body: `Your booking for ${itemName} has been confirmed. Check your bookings for details.`,
-        data: { type: 'booking', itemName },
-        sound: 'default',
-      },
-      trigger: { seconds: 1 },
-    });
-  }
-
-  static async sendRentalNotification(itemName: string, renterName: string) {
-    if (!Notifications) {
-      console.log('Notifications not available, simulating rental notification');
-      return;
-    }
-
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "🎉 New Rental!",
-        body: `${renterName} has rented your ${itemName}. Check your dashboard for details.`,
-        data: { type: 'rental', itemName, renterName },
-        sound: 'default',
-      },
-      trigger: { seconds: 1 },
-    });
-  }
-
-  static async sendReminderEmail(userEmail: string, userName: string) {
-    // This would typically call your backend API
-    console.log(`Sending reminder email to ${userEmail} for user ${userName}`);
-    // In a real app, you'd make an API call to your backend
-    return true;
-  }
-
-  static async sendVerificationReminderNotification(userName: string) {
-    if (!Notifications) {
-      console.log('Notifications not available, simulating verification reminder notification');
-      return;
-    }
-
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "⚠️ Verification Required",
-        body: `Hi ${userName}! Complete your owner ID verification within 2 days to maintain your owner status.`,
-        data: { type: 'verification_reminder', userName },
-        sound: 'default',
-      },
-      trigger: { seconds: 1 },
-    });
-  }
-
-  static async sendWelcomeEmail(userEmail: string, userName: string) {
-    // This would typically call your backend API
-    console.log(`Sending welcome email to ${userEmail} for user ${userName}`);
-    // In a real app, you'd make an API call to your backend
-    return true;
-  }
-
-  static async checkFirstTimeUser(userId: string): Promise<boolean> {
-    try {
-      const hasSeenWelcome = await AsyncStorage.getItem(`welcome_shown_${userId}`);
-      return hasSeenWelcome === null;
-    } catch (error) {
-      console.error('Error checking first time user:', error);
-      return false;
-    }
-  }
-
-  static async markWelcomeShown(userId: string) {
-    try {
-      await AsyncStorage.setItem(`welcome_shown_${userId}`, 'true');
-    } catch (error) {
-      console.error('Error marking welcome as shown:', error);
-    }
-  }
-
-  static async scheduleReminderEmail(userId: string, userEmail: string, userName: string) {
-    try {
-      // Schedule reminder for 24 hours later (in production, you might want longer)
-      const reminderTime = new Date();
-      reminderTime.setHours(reminderTime.getHours() + 24);
-      
-      await AsyncStorage.setItem(`reminder_scheduled_${userId}`, reminderTime.toISOString());
-      await AsyncStorage.setItem(`reminder_email_${userId}`, userEmail);
-      await AsyncStorage.setItem(`reminder_name_${userId}`, userName);
-      
-      console.log(`Reminder email scheduled for ${reminderTime.toISOString()}`);
-    } catch (error) {
-      console.error('Error scheduling reminder email:', error);
+      this.showError(
+        'Error',
+        error?.message || 'An unexpected error occurred. Please try again.'
+      );
     }
   }
 }
+
+export const notificationService = NotificationService.getInstance();

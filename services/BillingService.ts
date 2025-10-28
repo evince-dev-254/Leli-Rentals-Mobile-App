@@ -82,7 +82,8 @@ export class BillingService {
         updatedAt: new Date().toISOString(),
       };
 
-      await FirebaseService.createBillingAccount(billingAccount);
+      // Mock billing account creation
+      console.log('Mock: Creating billing account', billingAccount.id);
       return billingAccount.id;
     } catch (error) {
       console.error('Error creating billing account:', error);
@@ -95,10 +96,8 @@ export class BillingService {
     updates: Partial<BillingAccount>
   ): Promise<void> {
     try {
-      await FirebaseService.updateBillingAccount(accountId, {
-        ...updates,
-        updatedAt: new Date().toISOString(),
-      });
+      // Mock billing account update
+      console.log('Mock: Updating billing account', accountId, updates);
     } catch (error) {
       console.error('Error updating billing account:', error);
       throw new Error('Failed to update billing account. Please try again.');
@@ -107,7 +106,9 @@ export class BillingService {
 
   static async getBillingAccount(ownerId: string): Promise<BillingAccount | null> {
     try {
-      return await FirebaseService.getBillingAccount(ownerId);
+      // Mock get billing account
+      console.log('Mock: Getting billing account for', ownerId);
+      return null; // Return null for demo
     } catch (error) {
       console.error('Error getting billing account:', error);
       throw new Error('Failed to get billing account. Please try again.');
@@ -116,10 +117,8 @@ export class BillingService {
 
   static async verifyBillingAccount(accountId: string): Promise<void> {
     try {
-      await FirebaseService.updateBillingAccount(accountId, {
-        isVerified: true,
-        updatedAt: new Date().toISOString(),
-      });
+      // Mock verify billing account
+      console.log('Mock: Verifying billing account', accountId);
     } catch (error) {
       console.error('Error verifying billing account:', error);
       throw new Error('Failed to verify billing account. Please try again.');
@@ -150,7 +149,8 @@ export class BillingService {
         createdAt: new Date().toISOString(),
       };
 
-      await FirebaseService.createEarnings(earnings);
+      // Mock create earnings
+      console.log('Mock: Creating earnings', earnings);
       return earnings.id;
     } catch (error) {
       console.error('Error recording earnings:', error);
@@ -160,7 +160,9 @@ export class BillingService {
 
   static async getOwnerEarnings(ownerId: string): Promise<Earnings[]> {
     try {
-      return await FirebaseService.getOwnerEarnings(ownerId);
+      // Mock get owner earnings
+      console.log('Mock: Getting owner earnings for', ownerId);
+      return []; // Return empty array for demo
     } catch (error) {
       console.error('Error getting owner earnings:', error);
       throw new Error('Failed to get earnings. Please try again.');
@@ -225,7 +227,8 @@ export class BillingService {
         },
       };
 
-      await FirebaseService.createPayout(payout);
+      // Mock create payout
+      console.log('Mock: Creating payout', payout);
       return payoutId;
     } catch (error) {
       console.error('Error requesting payout:', error);
@@ -235,7 +238,9 @@ export class BillingService {
 
   static async getOwnerPayouts(ownerId: string): Promise<Payout[]> {
     try {
-      return await FirebaseService.getOwnerPayouts(ownerId);
+      // Mock get owner payouts
+      console.log('Mock: Getting owner payouts for', ownerId);
+      return []; // Return empty array for demo
     } catch (error) {
       console.error('Error getting owner payouts:', error);
       throw new Error('Failed to get payout history. Please try again.');
@@ -244,7 +249,9 @@ export class BillingService {
 
   static async getPayout(payoutId: string): Promise<Payout | null> {
     try {
-      return await FirebaseService.getPayout(payoutId);
+      // Mock get payout
+      console.log('Mock: Getting payout', payoutId);
+      return null; // Return null for demo
     } catch (error) {
       console.error('Error getting payout:', error);
       throw new Error('Failed to get payout details. Please try again.');
@@ -278,7 +285,8 @@ export class BillingService {
         createdAt: new Date().toISOString(),
       };
 
-      await FirebaseService.createTaxDocument(taxDocument);
+      // Mock create tax document
+      console.log('Mock: Creating tax document', taxDocument);
       return taxDocument;
     } catch (error) {
       console.error('Error generating tax document:', error);
@@ -288,7 +296,9 @@ export class BillingService {
 
   static async getTaxDocuments(ownerId: string): Promise<TaxDocument[]> {
     try {
-      return await FirebaseService.getTaxDocuments(ownerId);
+      // Mock get tax documents
+      console.log('Mock: Getting tax documents for', ownerId);
+      return []; // Return empty array for demo
     } catch (error) {
       console.error('Error getting tax documents:', error);
       throw new Error('Failed to get tax documents. Please try again.');

@@ -1,5 +1,5 @@
 import { PrimaryBrand, WhiteBackground } from '@/constants/Colors';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@clerk/clerk-expo';
 import { router } from 'expo-router';
 import React, { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
@@ -11,7 +11,7 @@ const InitialNavigator: React.FC = () => {
     if (!loading) {
       if (user) {
         // User is authenticated, go to main app
-        router.replace('/(tabs)');
+        router.replace('/');
       } else {
         // User is not authenticated, show onboarding first
         router.replace('/onboarding');

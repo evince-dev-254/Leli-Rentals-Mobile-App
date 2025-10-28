@@ -1,6 +1,6 @@
 import { Alert } from 'react-native';
 
-// Custom alert function with plum color theme
+// Custom alert function with captivating color theme
 export const showAlert = (
   title: string,
   message?: string,
@@ -13,7 +13,7 @@ export const showAlert = (
   Alert.alert(title, message, buttons);
 };
 
-// Success alert with plum theme
+// Success alert with vibrant green theme
 export const showSuccessAlert = (
   title: string,
   message?: string,
@@ -32,7 +32,7 @@ export const showSuccessAlert = (
   );
 };
 
-// Error alert with plum theme
+// Error alert with vibrant red theme
 export const showErrorAlert = (
   title: string,
   message?: string,
@@ -51,7 +51,7 @@ export const showErrorAlert = (
   );
 };
 
-// Confirmation alert with plum theme
+// Confirmation alert with vibrant amber theme
 export const showConfirmationAlert = (
   title: string,
   message: string,
@@ -76,7 +76,7 @@ export const showConfirmationAlert = (
   );
 };
 
-// Delete confirmation alert with plum theme
+// Delete confirmation alert with vibrant red theme
 export const showDeleteAlert = (
   title: string,
   message: string,

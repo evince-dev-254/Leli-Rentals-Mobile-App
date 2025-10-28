@@ -1,5 +1,5 @@
 import { PrimaryBrand, PrimaryText, WhiteBackground } from '@/constants/Colors';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@clerk/clerk-expo';
 import { router } from 'expo-router';
 import React, { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -9,16 +9,16 @@ interface AuthGuardProps {
 }
 
 const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, isLoaded } = useAuth();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (isLoaded && !user) {
       // Redirect to login if not authenticated
-      router.replace('/login');
+      router.replace('/(auth)/login');
     }
-  }, [user, loading]);
+  }, [user, isLoaded]);
 
-  if (loading) {
+  if (!isLoaded) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={PrimaryBrand} />

@@ -1,11 +1,3 @@
-// Import expo-crypto with error handling
-let Crypto: any = null;
-try {
-  Crypto = require('expo-crypto');
-} catch (error) {
-  console.warn('expo-crypto not available, using fallback methods');
-}
-
 // Import fallback crypto service
 import { SimpleCryptoService } from './SimpleCryptoService';
 
@@ -16,20 +8,8 @@ export class CryptoService {
    * @returns Promise<string> - Random string
    */
   static async generateRandomString(length: number = 32): Promise<string> {
-    // Fallback to web crypto API
-    if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
-      const array = new Uint8Array(length);
-      window.crypto.getRandomValues(array);
-      return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-    }
-    
-    // Fallback to Math.random for development
-    let result = '';
-    const chars = '0123456789abcdef';
-    for (let i = 0; i < length * 2; i++) {
-      result += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return result;
+    // Use SimpleCryptoService to avoid native module issues
+    return await SimpleCryptoService.generateRandomString(length);
   }
 
   /**
@@ -37,28 +17,8 @@ export class CryptoService {
    * @returns Promise<string> - Secure authentication token
    */
   static async generateAuthToken(): Promise<string> {
-    const timestamp = Date.now().toString();
-    const randomPart = await this.generateRandomString(16);
-    const combined = `${timestamp}_${randomPart}`;
-    
-    if (Crypto) {
-      try {
-        // Create a hash of the combined string for additional security
-        const hash = await Crypto.digestStringAsync(
-          Crypto.CryptoDigestAlgorithm.SHA256,
-          combined,
-          { encoding: Crypto.CryptoEncoding.HEX }
-        );
-        return hash;
-      } catch (error) {
-        console.warn('expo-crypto error, using fallback hash:', error);
-        return await this.hashData(combined);
-      }
-    } else {
-      // Fallback to simple hash if expo-crypto is not available
-      console.warn('expo-crypto not available, using fallback hash');
-      return await this.hashData(combined);
-    }
+    // Use SimpleCryptoService as primary method to avoid native module issues
+    return await SimpleCryptoService.generateAuthToken();
   }
 
   /**
@@ -76,23 +36,8 @@ export class CryptoService {
    * @returns Promise<string> - Hashed data
    */
   static async hashData(data: string): Promise<string> {
-    // Use Web Crypto API if available
-    if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
-      const encoder = new TextEncoder();
-      const dataBuffer = encoder.encode(data);
-      const hashBuffer = await window.crypto.subtle.digest('SHA-256', dataBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-    
-    // Fallback to simple hash for development
-    let hash = 0;
-    for (let i = 0; i < data.length; i++) {
-      const char = data.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    return Math.abs(hash).toString(16);
+    // Use SimpleCryptoService to avoid native module issues
+    return await SimpleCryptoService.hashData(data);
   }
 
   /**

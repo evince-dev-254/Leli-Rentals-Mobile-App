@@ -8,6 +8,9 @@ module.exports = {
     "./utils/**/*.{js,jsx,ts,tsx}",
   ],
   presets: [require("nativewind/preset")],
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
   theme: {
     extend: {
       colors: {

@@ -1,39 +1,33 @@
-import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-
-// Simplified storage - use in-memory storage for mobile
-const getStorage = () => {
-  // Use in-memory storage for mobile to avoid localStorage issues
-  const memoryStorage: { [key: string]: string } = {};
-  
-  return {
-    getItem: (key: string) => Promise.resolve(memoryStorage[key] || null),
-    setItem: (key: string, value: string) => {
-      memoryStorage[key] = value;
-      return Promise.resolve();
-    },
-    removeItem: (key: string) => {
-      delete memoryStorage[key];
-      return Promise.resolve();
-    },
-    multiRemove: (keys: string[]) => {
-      keys.forEach(key => delete memoryStorage[key]);
-      return Promise.resolve();
-    }
-  };
-};
+import { useAuth } from '@clerk/clerk-expo';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
 
 export type AccountType = 'renter' | 'owner' | null;
 export type VerificationStatus = 'pending' | 'verified' | 'rejected' | 'not_started';
+
+export interface OwnerProfile {
+  businessName: string;
+  businessType: string;
+  location: string;
+  setupCompleted: boolean;
+  idVerificationCompleted: boolean;
+  idVerificationDeadline: string | null; // ISO date string
+  idVerificationReminderShown: boolean;
+}
 
 interface AccountContextType {
   accountType: AccountType;
   verificationStatus: VerificationStatus;
   isOwnerVerified: boolean;
+  ownerProfile: OwnerProfile | null;
+  loading: boolean;
   switchToOwner: () => void;
   switchToRenter: () => void;
   updateVerificationStatus: (status: VerificationStatus) => void;
-  setAccountType: (type: AccountType) => void;
-  logout: () => Promise<void>;
+  updateOwnerProfile: (profile: Partial<OwnerProfile>) => void;
+  checkVerificationDeadline: () => { shouldShowReminder: boolean; daysRemaining: number; shouldSignOut: boolean };
+  markVerificationReminderShown: () => void;
+  logout: () => void;
 }
 
 const AccountContext = createContext<AccountContextType | undefined>(undefined);
@@ -43,186 +37,196 @@ interface AccountProviderProps {
 }
 
 export const AccountProvider: React.FC<AccountProviderProps> = ({ children }) => {
-  const [accountType, setAccountTypeState] = useState<AccountType>(null);
+  const { isSignedIn, isLoaded } = useAuth();
+  const [accountType, setAccountType] = useState<AccountType>(null);
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>('not_started');
+  const [isOwnerVerified, setIsOwnerVerified] = useState(false);
+  const [ownerProfile, setOwnerProfile] = useState<OwnerProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
+  const lastSignedInStateRef = useRef<boolean | null>(null);
+
+  const storage = AsyncStorage;
 
   useEffect(() => {
-    loadAccountData();
-  }, []);
+    if (isLoaded && !hasLoadedRef.current) {
+      loadAccountData();
+    } else if (isLoaded && lastSignedInStateRef.current !== isSignedIn) {
+      // Only reload if the signed-in state actually changed
+      lastSignedInStateRef.current = isSignedIn;
+      loadAccountData();
+    }
+  }, [isLoaded, isSignedIn]);
 
-  // Listen for auth state changes to clear account data when user logs out
+  // Reset account data when user signs out
   useEffect(() => {
-    const checkAuthState = async () => {
-      try {
-        const { auth } = await import('@/config/firebase');
-        const { onAuthStateChanged } = await import('firebase/auth');
-        
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-          if (!user) {
-            // User logged out, clear account data
-            setAccountTypeState(null);
-            setVerificationStatus('not_started');
-          } else {
-            // User logged in, reload account data from Firestore
-            loadAccountData();
-          }
-        });
-        
-        return unsubscribe;
-      } catch (error) {
-        console.error('Error setting up auth state listener:', error);
-      }
-    };
-    
-    checkAuthState();
-  }, []);
+    if (isLoaded && !isSignedIn) {
+      setAccountType(null);
+      setVerificationStatus('not_started');
+      setIsOwnerVerified(false);
+      setOwnerProfile(null);
+      setLoading(false);
+      hasLoadedRef.current = false; // Reset the loaded flag
+    }
+  }, [isLoaded, isSignedIn]);
 
   const loadAccountData = async () => {
     try {
-      // Check if user has already selected an account type
-      const storage = getStorage();
-      const savedAccountType = await storage.getItem('accountType');
+      setLoading(true);
+      hasLoadedRef.current = true;
+      console.log('AccountContext: Loading account data, isSignedIn:', isSignedIn);
       
-      if (savedAccountType) {
-        setAccountTypeState(savedAccountType as AccountType);
-      } else {
-        // Check Firestore for user's account type if authenticated
+      if (!isSignedIn) {
+        // User is not signed in, reset account data
+        console.log('AccountContext: User not signed in, resetting account data');
+        setAccountType(null);
+        setVerificationStatus('not_started');
+        setIsOwnerVerified(false);
+        setLoading(false);
+        return;
+      }
+
+      // Load account type from storage
+      const savedAccountType = await storage.getItem('accountType');
+      console.log('AccountContext: Loaded account type from storage:', savedAccountType);
+      if (savedAccountType && (savedAccountType === 'renter' || savedAccountType === 'owner')) {
+        setAccountType(savedAccountType as AccountType);
+        console.log('AccountContext: Set account type to:', savedAccountType);
+      }
+
+      // Load verification status
+      const savedVerificationStatus = await storage.getItem('verificationStatus');
+      if (savedVerificationStatus && ['pending', 'verified', 'rejected', 'not_started'].includes(savedVerificationStatus)) {
+        setVerificationStatus(savedVerificationStatus as VerificationStatus);
+      }
+
+      // Load owner verification status
+      const savedIsOwnerVerified = await storage.getItem('isOwnerVerified');
+      setIsOwnerVerified(savedIsOwnerVerified === 'true');
+
+      // Load owner profile
+      const savedOwnerProfile = await storage.getItem('ownerProfile');
+      if (savedOwnerProfile) {
         try {
-          const { auth } = await import('@/config/firebase');
-          const { FirebaseService } = await import('@/services/FirebaseService');
-          
-          if (auth.currentUser) {
-            const userProfile = await FirebaseService.getUserProfile(auth.currentUser.uid);
-            if (userProfile && userProfile.accountType) {
-              // Load account type from Firestore and save to local storage
-              setAccountTypeState(userProfile.accountType as AccountType);
-              await storage.setItem('accountType', userProfile.accountType);
-            } else {
-              // No account type selected yet - user needs to choose
-              setAccountTypeState(null);
-            }
-          } else {
-            // No user authenticated - user needs to choose
-            setAccountTypeState(null);
-          }
-        } catch (firestoreError) {
-          console.error('Error loading account type from Firestore:', firestoreError);
-          // Fallback to null if Firestore fails
-          setAccountTypeState(null);
+          const profile = JSON.parse(savedOwnerProfile);
+          setOwnerProfile(profile);
+          console.log('AccountContext: Loaded owner profile:', profile);
+        } catch (parseError) {
+          console.error('Error parsing owner profile:', parseError);
         }
       }
-      setVerificationStatus('not_started');
+
     } catch (error) {
       console.error('Error loading account data:', error);
-      // Default to null if there's an error
-      setAccountTypeState(null);
-    }
-  };
-
-  const setAccountType = async (type: AccountType) => {
-    try {
-      setAccountTypeState(type);
-      // Save account type to storage
-      const storage = getStorage();
-      await storage.setItem('accountType', type || '');
-      
-      // Update user profile in Firestore if user is authenticated
-      try {
-        const { auth } = await import('@/config/firebase');
-        const { FirebaseService } = await import('@/services/FirebaseService');
-        
-        if (auth.currentUser) {
-          await FirebaseService.updateUserProfile(auth.currentUser.uid, {
-            accountType: type,
-          });
-        }
-      } catch (error) {
-        console.error('Error updating account type in Firestore:', error);
-      }
-    } catch (error) {
-      console.error('Error saving account type:', error);
-    }
-  };
-
-  const updateVerificationStatus = async (status: VerificationStatus) => {
-    try {
-      setVerificationStatus(status);
-      // Simplified - no storage saving
-    } catch (error) {
-      console.error('Error saving verification status:', error);
+    } finally {
+      setLoading(false);
+      console.log('AccountContext: Finished loading account data');
     }
   };
 
   const switchToOwner = async () => {
     try {
-      console.log('Switching to owner...');
-      await setAccountType('owner');
-      // Reset verification status when switching to owner
-      setVerificationStatus('not_started');
-      const storage = getStorage();
-      await storage.setItem('verificationStatus', 'not_started');
+      console.log('Switching to owner account type...');
+      setAccountType('owner');
+      await storage.setItem('accountType', 'owner');
       console.log('Successfully switched to owner');
     } catch (error) {
       console.error('Error switching to owner:', error);
     }
   };
 
-  const scheduleVerificationReminder = async () => {
-    try {
-      const storage = getStorage();
-      const reminderDate = new Date();
-      reminderDate.setDate(reminderDate.getDate() + 2); // 2 days from now
-      
-      await storage.setItem('verificationReminderDate', reminderDate.toISOString());
-      await storage.setItem('verificationReminderSent', 'false');
-    } catch (error) {
-      console.error('Error scheduling verification reminder:', error);
-    }
-  };
-
   const switchToRenter = async () => {
     try {
-      console.log('Switching to renter...');
-      await setAccountType('renter');
-      // Clear verification status when switching to renter
-      setVerificationStatus('not_started');
-      const storage = getStorage();
-      await storage.setItem('verificationStatus', 'not_started');
+      console.log('Switching to renter account type...');
+      setAccountType('renter');
+      await storage.setItem('accountType', 'renter');
       console.log('Successfully switched to renter');
     } catch (error) {
       console.error('Error switching to renter:', error);
     }
   };
 
+  const updateVerificationStatus = async (status: VerificationStatus) => {
+    try {
+      setVerificationStatus(status);
+      await storage.setItem('verificationStatus', status);
+      
+      if (status === 'verified') {
+        setIsOwnerVerified(true);
+        await storage.setItem('isOwnerVerified', 'true');
+      } else {
+        setIsOwnerVerified(false);
+        await storage.setItem('isOwnerVerified', 'false');
+      }
+    } catch (error) {
+      console.error('Error updating verification status:', error);
+    }
+  };
+
+  const updateOwnerProfile = async (profile: Partial<OwnerProfile>) => {
+    try {
+      const updatedProfile = { ...ownerProfile, ...profile };
+      setOwnerProfile(updatedProfile);
+      await storage.setItem('ownerProfile', JSON.stringify(updatedProfile));
+      console.log('Owner profile updated:', updatedProfile);
+    } catch (error) {
+      console.error('Error updating owner profile:', error);
+    }
+  };
+
+  const checkVerificationDeadline = () => {
+    if (!ownerProfile || ownerProfile.idVerificationCompleted) {
+      return { shouldShowReminder: false, daysRemaining: 0, shouldSignOut: false };
+    }
+
+    if (!ownerProfile.idVerificationDeadline) {
+      return { shouldShowReminder: false, daysRemaining: 0, shouldSignOut: false };
+    }
+
+    const deadline = new Date(ownerProfile.idVerificationDeadline);
+    const now = new Date();
+    const timeDiff = deadline.getTime() - now.getTime();
+    const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+    const shouldShowReminder = daysRemaining <= 2 && !ownerProfile.idVerificationReminderShown;
+    const shouldSignOut = daysRemaining <= 0;
+
+    return { shouldShowReminder, daysRemaining, shouldSignOut };
+  };
+
+  const markVerificationReminderShown = async () => {
+    if (ownerProfile) {
+      await updateOwnerProfile({ idVerificationReminderShown: true });
+    }
+  };
+
   const logout = async () => {
     try {
-      // Clear all stored data
-      const storage = getStorage();
-      await storage.multiRemove([
-        'accountType',
-        'verificationStatus',
-        'userSession',
-        'userData'
-      ]);
+      // Clear all account data from storage
+      await storage.multiRemove(['accountType', 'verificationStatus', 'isOwnerVerified', 'ownerProfile']);
       
-      // Reset to default state
-      setAccountTypeState(null);
+      // Reset state
+      setAccountType(null);
       setVerificationStatus('not_started');
+      setIsOwnerVerified(false);
+      setOwnerProfile(null);
     } catch (error) {
       console.error('Error during logout:', error);
     }
   };
 
-  const isOwnerVerified = verificationStatus === 'verified';
-
   const value: AccountContextType = {
     accountType,
     verificationStatus,
     isOwnerVerified,
+    ownerProfile,
+    loading,
     switchToOwner,
     switchToRenter,
     updateVerificationStatus,
-    setAccountType,
+    updateOwnerProfile,
+    checkVerificationDeadline,
+    markVerificationReminderShown,
     logout,
   };
 

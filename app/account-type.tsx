@@ -1,51 +1,144 @@
 import BackButton from '@/components/BackButton';
+import LoadingScreen from '@/components/LoadingScreen';
+import { SignOutButton } from '@/components/SignOutButton';
+import TechLoader from '@/components/TechLoader';
+import ToastNotification from '@/components/ToastNotification';
 import { useAccount } from '@/contexts/AccountContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useCustomAlert } from '@/hooks/useCustomAlert';
+import { useToast } from '@/hooks/useToast';
+import { useAuth, useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const AccountTypeScreen = () => {
-  const { setAccountType, accountType } = useAccount();
-  const { user } = useAuth();
+  const { accountType, switchToOwner, switchToRenter } = useAccount();
+  const { user } = useUser();
+  const { isSignedIn, isLoaded } = useAuth();
+  const { showAlert, AlertComponent } = useCustomAlert();
+  const { toast, showError, showWarning, showSuccess, hideToast } = useToast();
   const insets = useSafeAreaInsets();
   const [selectedType, setSelectedType] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const hasNavigatedRef = useRef(false);
 
-  // Check if user already has an account type
+  // Confirm user is authenticated before allowing account type selection
   useEffect(() => {
-    if (user && accountType) {
-      // User already has an account type, redirect to main app
-      router.push('/(tabs)');
+    if (isLoaded && !isSignedIn) {
+      console.log('User not authenticated, redirecting to login');
+      router.replace('/(auth)/login');
     }
-  }, [user, accountType]);
+  }, [isLoaded, isSignedIn]);
+
+  // Pre-select existing account type but allow user to change it
+  useEffect(() => {
+    if (isLoaded && isSignedIn && accountType && !selectedType) {
+      console.log(`User is already a ${accountType}, pre-selecting account type`);
+      setSelectedType(accountType);
+    }
+  }, [isLoaded, isSignedIn, accountType, selectedType]);
+
+  // Show loading while checking authentication
+  if (!isLoaded) {
+    return (
+      <LoadingScreen 
+        text="Loading..."
+        variant="spinner"
+        color="#d97706"
+        size={60}
+      />
+    );
+  }
+
+  // Note: Automatic redirects removed - let user manually choose
 
   const handleContinue = async () => {
-    if (selectedType === 'renter') {
-      await setAccountType('renter');
-      router.push('/(tabs)');
-    } else if (selectedType === 'owner') {
-      await setAccountType('owner');
-      router.push('/(tabs)');
+    if (hasNavigatedRef.current || isProcessing) {
+      console.log('Navigation already in progress, ignoring duplicate call');
+      return;
+    }
+
+    try {
+      console.log('Setting account type:', selectedType);
+      setIsProcessing(true);
+      hasNavigatedRef.current = true;
+      
+      if (selectedType === 'renter') {
+        // Save account type and navigate to home for renters
+        await switchToRenter();
+        console.log('Switched to renter, redirecting to renter home...');
+        // Navigate directly to renter home
+        router.replace('/(renter)');
+        
+        // Show success notification for renters
+        setTimeout(() => {
+          const message = accountType === 'renter' 
+            ? 'Account type updated! You can continue using renter features.'
+            : 'Renter account selected! You can now browse and rent items.';
+          
+          showSuccess(message, {
+            label: 'Got it',
+            onPress: () => {
+              // Just dismiss the notification
+            }
+          });
+        }, 500);
+      } else if (selectedType === 'owner') {
+        // Save account type and navigate to owner setup/dashboard
+        await switchToOwner();
+        console.log('Switched to owner, redirecting to owner dashboard...');
+        
+        // Navigate directly to owner dashboard
+        router.replace('/(owner)');
+        
+        // Show success notification after navigation
+                setTimeout(() => {
+                  const message = accountType === 'owner' 
+                    ? 'Account type updated! You can continue using owner features.'
+                    : 'Owner account selected! You can now access owner features. Remember to verify your identity in your profile.';
+                  
+                  showSuccess(message, {
+                    label: 'Got it',
+                    onPress: () => {
+                      // Just dismiss the notification
+                    }
+                  });
+                }, 500);
+      }
+    } catch (error) {
+      console.error('Error setting account type:', error);
+      showError('Failed to set account type. Please try again.');
+      hasNavigatedRef.current = false; // Reset on error
+      setIsProcessing(false); // Reset processing state
     }
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fefce8' }}>
+      <ScrollView style={styles.container}>
       {/* Animated Back Button */}
-      <BackButton onPress={() => router.push('/login')} />
+      <BackButton onPress={() => router.push('/(auth)/login')} />
 
       <View style={styles.content}>
-        <Text style={styles.title}>Choose Your Account Type</Text>
-        <Text style={styles.subtitle}>Select how you&apos;d like to use Leli Rentals</Text>
+                <Text style={styles.title}>
+                  {accountType ? 'Change Your Account Type' : 'Choose Your Account Type'}
+                </Text>
+                <Text style={styles.subtitle}>
+                  {accountType 
+                    ? `You're currently a ${accountType}. You can change your account type below.`
+                    : 'Select how you\'d like to use Leli Rentals'
+                  }
+                </Text>
 
         {/* Renter Option */}
         <TouchableOpacity 
@@ -120,24 +213,47 @@ const AccountTypeScreen = () => {
         </TouchableOpacity>
 
         {/* Continue Button */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
             styles.continueButton,
-            !selectedType && styles.disabledButton,
-            { marginBottom: Math.max(insets.bottom, 20) }
+            (!selectedType || isProcessing) && styles.disabledButton,
+            { marginBottom: Math.max(insets.bottom + 20, 40) }
           ]}
           onPress={handleContinue}
-          disabled={!selectedType}
+          disabled={!selectedType || isProcessing}
         >
-          <Text style={[
-            styles.continueButtonText,
-            !selectedType && styles.disabledButtonText
-          ]}>
-            Continue
-          </Text>
+          {isProcessing ? (
+            <View style={styles.loadingContainer}>
+              <TechLoader size={16} color="#ffffff" variant="circular" showText={false} />
+              <Text style={[styles.continueButtonText, { marginLeft: 8 }]}>
+                Setting up...
+              </Text>
+            </View>
+                  ) : (
+                    <Text style={[
+                      styles.continueButtonText,
+                      (!selectedType || isProcessing) && styles.disabledButtonText
+                    ]}>
+                      {accountType && selectedType === accountType ? 'Continue' : 'Update Account Type'}
+                    </Text>
+                  )}
         </TouchableOpacity>
+
+        {/* Sign Out Button */}
+        <View style={{ marginBottom: Math.max(insets.bottom + 40, 60) }}>
+          <SignOutButton />
+        </View>
       </View>
     </ScrollView>
+    <AlertComponent />
+    <ToastNotification
+      visible={toast.visible}
+      message={toast.message}
+      type={toast.type}
+      onHide={hideToast}
+      action={toast.action}
+    />
+    </SafeAreaView>
   );
 };
 
@@ -245,6 +361,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 5,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   disabledButton: {
     backgroundColor: '#e5e7eb',

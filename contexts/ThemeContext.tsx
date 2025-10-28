@@ -1,9 +1,9 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-type ThemeMode = 'light' | 'dark' | 'system';
-type Theme = 'light' | 'dark';
+type ThemeMode = 'light' | 'dark' | 'nature' | 'system';
+type Theme = 'light' | 'dark' | 'nature';
 
 interface ThemeContextType {
   theme: Theme;
@@ -36,7 +36,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     const loadTheme = async () => {
       try {
         const savedTheme = await AsyncStorage.getItem('themeMode');
-        if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
+        if (savedTheme && ['light', 'dark', 'nature', 'system'].includes(savedTheme)) {
           setThemeModeState(savedTheme as ThemeMode);
         }
       } catch (error) {
@@ -67,7 +67,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   };
 
   const theme = getActualTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === 'dark' || theme === 'nature';
 
   // Don't render until theme is loaded
   if (!isInitialized) {

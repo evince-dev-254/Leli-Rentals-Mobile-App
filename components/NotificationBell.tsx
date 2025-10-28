@@ -1,13 +1,20 @@
 import { PrimaryBrand, PrimaryText, WhiteBackground } from '@/constants/Colors';
-import { useAuth } from '@/contexts/AuthContext';
-import { NotificationService } from '@/services/NotificationService';
+import { useAuth } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 // Conditional import for notifications
 let Notifications: any = null;
+let notificationsSupported = false;
+
 try {
   Notifications = require('expo-notifications');
+  // Check if the required methods exist
+  if (Notifications && 
+      typeof Notifications.addNotificationReceivedListener === 'function' &&
+      typeof Notifications.addNotificationResponseReceivedListener === 'function') {
+    notificationsSupported = true;
+  }
 } catch (error) {
   console.log('Notifications not available in development environment');
 }
@@ -25,42 +32,69 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onPress }) => {
     // Register for push notifications
     registerForPushNotifications();
 
-    // Set up notification listeners (only if available)
-    if (Notifications) {
-      const notificationListener = Notifications.addNotificationReceivedListener(notification => {
-        console.log('Notification received:', notification);
-        setNotificationCount(prev => prev + 1);
-        setHasNewNotifications(true);
-      });
+    // Set up notification listeners (only if available and supported)
+    if (Notifications && notificationsSupported) {
+      let notificationListener: any = null;
+      let responseListener: any = null;
 
-      const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-        console.log('Notification response:', response);
-        const data = response.notification.request.content.data;
-        
-        if (data?.type === 'welcome') {
-          Alert.alert('Welcome!', 'Thanks for joining Leli Rentals!');
-        } else if (data?.type === 'reminder') {
-          Alert.alert('Reminder', 'Don\'t forget to explore our amazing items!');
-        } else if (data?.type === 'booking') {
-          Alert.alert('Booking Update', `Your booking for ${data.itemName} has been updated.`);
-        } else if (data?.type === 'rental') {
-          Alert.alert('New Rental!', `${data.renterName} has rented your ${data.itemName}. Check your dashboard for details.`);
-        }
-      });
+      try {
+        notificationListener = Notifications.addNotificationReceivedListener(notification => {
+          console.log('Notification received:', notification);
+          setNotificationCount(prev => prev + 1);
+          setHasNewNotifications(true);
+        });
+
+        responseListener = Notifications.addNotificationResponseReceivedListener(response => {
+          console.log('Notification response:', response);
+          const data = response.notification.request.content.data;
+          
+          if (data?.type === 'welcome') {
+            Alert.alert('Welcome!', 'Thanks for joining Leli Rentals!');
+          } else if (data?.type === 'reminder') {
+            Alert.alert('Reminder', 'Don\'t forget to explore our amazing items!');
+          } else if (data?.type === 'booking') {
+            Alert.alert('Booking Update', `Your booking for ${data.itemName} has been updated.`);
+          } else if (data?.type === 'rental') {
+            Alert.alert('New Rental!', `${data.renterName} has rented your ${data.itemName}. Check your dashboard for details.`);
+          }
+        });
+      } catch (error) {
+        console.log('Error setting up notification listeners:', error);
+      }
 
       return () => {
-        Notifications.removeNotificationSubscription(notificationListener);
-        Notifications.removeNotificationSubscription(responseListener);
+        // Clean up listeners safely
+        try {
+          if (notificationListener && typeof notificationListener.remove === 'function') {
+            notificationListener.remove();
+          }
+          if (responseListener && typeof responseListener.remove === 'function') {
+            responseListener.remove();
+          }
+        } catch (error) {
+          console.log('Error cleaning up notification listeners:', error);
+        }
       };
     }
   }, []);
 
   const registerForPushNotifications = async () => {
     try {
-      const token = await NotificationService.registerForPushNotificationsAsync();
-      if (token) {
-        console.log('Push notification token:', token);
-        // In a real app, you would send this token to your backend
+      // Check if Notifications is available and supported
+      if (!Notifications || !notificationsSupported) {
+        console.log('Notifications not available or not supported in this environment');
+        return;
+      }
+
+      // Check if the method exists
+      if (typeof Notifications.registerForPushNotificationsAsync === 'function') {
+        const token = await Notifications.registerForPushNotificationsAsync();
+        if (token) {
+          console.log('Push notification token:', token);
+          // In a real app, you would send this token to your backend
+        }
+      } else {
+        console.log('Push notifications not supported in this environment');
       }
     } catch (error) {
       console.error('Error registering for push notifications:', error);
@@ -70,19 +104,6 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onPress }) => {
   const handlePress = () => {
     if (onPress) {
       onPress();
-    } else {
-      // Default behavior - show notifications
-      Alert.alert(
-        'Notifications',
-        `You have ${notificationCount} new notifications`,
-        [
-          { text: 'Mark as Read', onPress: () => {
-            setNotificationCount(0);
-            setHasNewNotifications(false);
-          }},
-          { text: 'Cancel', style: 'cancel' }
-        ]
-      );
     }
   };
 

@@ -45,7 +45,15 @@
         }
       ],
       "expo-secure-store",
-      "@react-native-google-signin/google-signin"
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "launchMode": "singleTask"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
@@ -57,6 +65,10 @@
         "projectId": "db0b20da-6c32-4fa2-8de8-361b9155067d"
       }
     },
-    "owner": "evincek254"
+    "owner": "evincek254",
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "url": "https://u.expo.dev/db0b20da-6c32-4fa2-8de8-361b9155067d"
+    }
   }
 }
